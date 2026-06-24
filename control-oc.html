@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control OC & Facturas</title>
+<script src="config.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --navy:#0F1B2D; --navy-mid:#1A2D45; --accent:#0EA5E9; --accent-dim:#0284C7;
+  --gold:#F59E0B; --green:#10B981; --red:#EF4444; --purple:#8B5CF6; --teal:#06B6D4;
+  --gray-50:#F8FAFC; --gray-100:#F1F5F9; --gray-200:#E2E8F0; --gray-400:#94A3B8;
+  --gray-500:#64748B; --gray-700:#334155; --text:#0F1B2D; --text2:#475569;
+  --white:#FFFFFF; --border:#E2E8F0;
+  --r:10px; --rs:6px;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
+  --sh-lg:0 8px 32px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#EEF2F7;color:var(--text);min-height:100vh;font-size:14px}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:230px;background:var(--navy);display:flex;flex-direction:column;z-index:100}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo-badge{display:inline-flex;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:15px}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-sub{color:var(--gray-400);font-size:11px;font-weight:400;margin-top:2px}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-sec{color:rgba(255,255,255,.3);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:10px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--rs);color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;font-size:13.5px;font-weight:500;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-item .icon{width:18px;text-align:center;font-size:15px}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:11px}
+
+/* MAIN */
+.main{margin-left:230px;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:700;color:var(--navy)}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.page{display:none;padding:28px}
+.page.active{display:block}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh);border-left:4px solid var(--accent)}
+.stat-card.gold{border-left-color:var(--gold)}
+.stat-card.green{border-left-color:var(--green)}
+.stat-card.red{border-left-color:var(--red)}
+.stat-card.purple{border-left-color:var(--purple)}
+.stat-label{font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:28px;font-weight:700;color:var(--navy);font-family:'JetBrains Mono',monospace;margin:4px 0 2px}
+.stat-sub{font-size:11px;color:var(--gray-400)}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px}
+.card-header{padding:16px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.card-header h3{font-size:14px;font-weight:600;color:var(--navy)}
+.card-body{padding:20px 22px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rs);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dim)}
+.btn-secondary{background:var(--gray-100);color:var(--gray-700);border:1px solid var(--border)}.btn-secondary:hover{background:var(--gray-200)}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+/* TABLE */
+.table-wrap{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--gray-50);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--gray-50)}
+tbody td{padding:11px 14px;font-size:13px;color:var(--text2);vertical-align:middle}
+tbody td strong{color:var(--text);font-weight:600}
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray-400);font-size:13px}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge::before{content:'●';font-size:7px}
+.badge-aprobada{background:#D1FAE5;color:#065F46}
+.badge-ingresada{background:#F1F5F9;color:#475569}
+.badge-en-aprobacion{background:#FEF3C7;color:#92400E}
+.badge-rechazada{background:#FEE2E2;color:#991B1B}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg)}
+.modal-lg{max-width:900px}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10;border-radius:14px 14px 0 0}
+.modal-header h2{font-size:16px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--gray-400);padding:4px}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--gray-50);border-radius:0 0 14px 14px}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;font-weight:600;color:var(--gray-700)}
+.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-family:inherit;font-size:13.5px;outline:none;transition:border-color .15s;color:var(--text);background:#fff}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,165,233,.1)}
+.form-group input[readonly]{background:var(--gray-50);color:var(--gray-500);cursor:not-allowed}
+.sec-div{grid-column:1/-1;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px}
+
+/* ITEMS TABLE */
+.items-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.items-tbl th{background:var(--gray-50);padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--gray-500);border:1px solid var(--border)}
+.items-tbl td{padding:7px 8px;border:1px solid var(--border);vertical-align:middle}
+.items-tbl input{border:none;width:100%;font-family:inherit;font-size:13px;padding:2px 4px;outline:none;background:transparent}
+.items-tbl input:focus{background:#F0F9FF;border-radius:4px}
+
+/* TOTALS */
+.totals-box{margin-top:12px;background:var(--gray-50);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px}
+.tot-row.big{font-weight:700;font-size:15px;color:var(--navy);border-top:1px solid var(--border);margin-top:6px;padding-top:10px}
+
+/* BUDGET BAR */
+.bbar-wrap{margin-bottom:12px}
+.bbar-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-bottom:5px}
+.bbar{height:10px;background:var(--gray-200);border-radius:99px;overflow:hidden}
+.bbar-fill{height:100%;border-radius:99px;transition:width .4s;background:var(--green)}
+.bbar-fill.warn{background:var(--gold)}
+.bbar-fill.over{background:var(--red)}
+.bbar-sub{font-size:11px;color:var(--gray-400);margin-top:4px}
+
+/* PDF IMPORT */
+.import-zone{border:2px dashed var(--border);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50);position:relative}
+.import-zone:hover,.import-zone.drag-over{border-color:var(--accent);background:#F0F9FF}
+.import-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.import-zone .zi{font-size:32px;margin-bottom:8px}
+.import-zone .zt{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.import-zone .zs{font-size:12px;color:var(--gray-400)}
+.imp-loading{display:none;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--rs);padding:12px 16px;margin-top:12px;font-size:13px;color:#1D4ED8}
+.imp-loading.show{display:flex}
+.spinner{width:18px;height:18px;border:2px solid #BFDBFE;border-top-color:#1D4ED8;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.imp-error{display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--rs);padding:12px 16px;margin-top:12px;font-size:13px;color:#991B1B}
+.imp-error.show{display:block}
+.imp-preview{display:none;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--rs);padding:14px 16px;margin-top:14px}
+.imp-preview.show{display:block}
+.imp-preview h4{font-size:12px;font-weight:700;color:#065F46;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.prev-field{font-size:12px}.prev-field .pl{color:var(--gray-500);font-weight:600}
+
+/* DETAIL FIELDS */
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.d-field{display:flex;flex-direction:column;gap:3px}
+.d-field .dl{font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase}
+.d-field .dv{font-size:13.5px;color:var(--text);font-weight:500}
+
+/* INVOICE CARD */
+.inv-card{background:var(--gray-50);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.inv-card .ic-left{display:flex;flex-direction:column;gap:3px}
+.inv-card .ic-num{font-weight:600;font-size:13px}
+.inv-card .ic-meta{font-size:11px;color:var(--gray-500)}
+.inv-card .ic-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+/* SEARCH */
+.search-row{display:flex;gap:10px;align-items:center}
+.search-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:var(--rs);font-family:inherit;font-size:13.5px;outline:none;transition:border-color .15s;color:var(--text)}
+.search-input:focus{border-color:var(--accent)}
+.search-sel{padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-family:inherit;font-size:13.5px;outline:none;background:#fff;color:var(--text);cursor:pointer}
+
+/* CHART */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.chart-card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:20px 22px}
+.chart-card h3{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px}
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:130px 1fr 90px;align-items:center;gap:10px;font-size:12px}
+.bar-track{background:var(--gray-100);border-radius:99px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px}
+.bar-val{text-align:right;font-weight:600;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gray-500)}
+
+/* NOTIFICATION */
+.notif{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:14px 20px;border-radius:var(--r);box-shadow:var(--sh-lg);font-size:13.5px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:380px;display:flex;align-items:center;gap:10px}
+.notif.show{transform:translateY(0);opacity:1}
+.notif.success{border-left:4px solid var(--green)}
+.notif.error{border-left:4px solid var(--red)}
+.notif.warning{border-left:4px solid var(--gold)}
+
+/* ALERT BANNER */
+.alert-banner{border-radius:var(--rs);padding:12px 16px;margin-bottom:14px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.alert-warn{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E}
+.alert-info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8}
+
+/* OC SALDO CARD */
+.oc-saldo-card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px}
+.oc-saldo-left{flex:1}
+.oc-saldo-num{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.oc-saldo-prov{font-size:14px;font-weight:600;color:var(--navy)}
+.oc-saldo-meta{font-size:11px;color:var(--gray-500);margin-top:2px}
+.oc-saldo-bar-wrap{flex:2}
+.oc-saldo-right{text-align:right;flex-shrink:0;min-width:120px}
+.oc-saldo-total{font-size:11px;color:var(--gray-400)}
+.oc-saldo-disp{font-size:15px;font-weight:700;color:var(--green)}
+.oc-saldo-disp.low{color:var(--gold)}
+.oc-saldo-disp.zero{color:var(--red)}
+
+/* UF DUAL */
+.uf-block{background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs);padding:12px 16px;margin-top:10px}
+.uf-block .uf-title{font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.uf-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12.5px}
+.uf-row .ul{color:#92400E}.uf-row .uv{font-weight:700;font-family:'JetBrains Mono',monospace;color:#78350F}
+.uf-input-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #FDE68A}
+.uf-input-row label{font-size:12px;font-weight:600;color:#92400E;white-space:nowrap}
+.uf-input-row input{padding:6px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:130px;background:#FFFDE7;color:#78350F;outline:none}
+/* EDIT MODAL */
+.del-confirm{background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--rs);padding:14px 16px;margin-bottom:16px;font-size:13px;color:#991B1B}
+@media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-full{grid-column:1}.chart-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-badge">
+      <div class="logo-icon">📋</div>
+      <div><div>OC Control</div><div class="logo-sub">Compras & Facturas</div></div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-sec">Principal</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Dashboard</div>
+    <div class="nav-sec">OC</div>
+    <div class="nav-item" onclick="showPage('maestro-oc')"><span class="icon">🗂️</span>Maestro de OC</div>
+    <div class="nav-item" onclick="openImportModal()"><span class="icon">📂</span>Importar OC (PDF)</div>
+    <div class="nav-sec">Facturas</div>
+    <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro de Facturas</div>
+    <div class="nav-item" onclick="openImportFactModal()"><span class="icon">📥</span>Importar Factura (PDF)</div>
+    <div class="nav-item" onclick="openFactModal()"><span class="icon">➕</span>Nueva Factura manual</div>
+  </nav>
+  <div class="sidebar-footer">v2.0 · Control OC & Facturas</div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-actions">
+      <div id="auth-bar"></div>
+      <button class="btn btn-secondary" onclick="openImportModal()">📂 Importar OC</button>
+      <button class="btn btn-secondary" onclick="openImportFactModal()">📥 Importar Factura</button>
+      <button class="btn btn-primary" onclick="openFactModal()">🧾 Nueva Factura</button>
+    </div>
+  </div>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div class="page active" id="page-dashboard">
+
+    <!-- Stats facturas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Facturas</div>
+        <div class="stat-value" id="s-fact-total">0</div>
+        <div class="stat-sub">Todas las facturas</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-label">En aprobación</div>
+        <div class="stat-value" id="s-fact-pend">0</div>
+        <div class="stat-sub">Pendientes de autorizar</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Aprobadas</div>
+        <div class="stat-value" id="s-fact-aprov">0</div>
+        <div class="stat-sub">Autorizadas</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">Monto Aprobado</div>
+        <div class="stat-value" id="s-monto-aprov" style="font-size:18px">$0</div>
+        <div class="stat-sub">Total facturado aprobado</div>
+      </div>
+    </div>
+
+    <!-- Saldo OC -->
+    <div class="card">
+      <div class="card-header">
+        <h3>💰 Saldo Presupuestario por OC</h3>
+        <span id="saldo-summary" style="font-size:12px;color:var(--gray-500)"></span>
+      </div>
+      <div class="card-body" id="saldo-oc-list">
+        <div class="empty-state"><div class="empty-icon">📋</div>Sin OC registradas aún</div>
+      </div>
+    </div>
+
+    <!-- Facturas recientes con estado -->
+    <div class="card">
+      <div class="card-header">
+        <h3>🧾 Facturas — Estado actual</h3>
+        <button class="btn btn-primary btn-sm" onclick="openFactModal()">➕ Nueva</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>N° Factura</th><th>OC Asociada</th><th>Proveedor</th>
+          <th>Monto</th><th>F. Ingreso</th><th>Estado</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="dash-fact-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="dash-fact-empty"><div class="empty-icon">🧾</div>No hay facturas ingresadas aún</div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Facturas por Estado</h3>
+        <div class="bar-chart" id="chart-fact-estado"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Utilización de OC (% consumido)</h3>
+        <div class="bar-chart" id="chart-oc-uso"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAESTRO OC ═══ -->
+  <div class="page" id="page-maestro-oc">
+    <div class="table-wrap">
+      <div class="card-header" style="background:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-size:14px;font-weight:600;color:var(--navy)">Maestro de Órdenes de Compra</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="openImportModal()">📂 Importar PDF Manager</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>N° OC Sistema</th><th>N° Manager</th><th>F. Documento</th>
+          <th>Empresa</th><th>Proveedor</th><th>Subtotal</th><th>IVA</th>
+          <th>Total OC</th><th>Facturado</th><th>Saldo</th><th>Origen</th><th></th>
+        </tr></thead>
+        <tbody id="maestro-oc-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="maestro-oc-empty"><div class="empty-icon">📋</div>Importa OC desde Manager con el botón de arriba</div>
+    </div>
+  </div>
+
+  <!-- ═══ MAESTRO FACTURAS ═══ -->
+  <div class="page" id="page-maestro-fact">
+    <!-- Search -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body">
+        <div class="search-row">
+          <input class="search-input" id="fact-search" type="text" placeholder="Buscar por N° factura, proveedor, OC…" oninput="renderMaestroFact()">
+          <select class="search-sel" id="fact-search-estado" onchange="renderMaestroFact()">
+            <option value="">Todos los estados</option>
+            <option value="ingresada">Ingresada</option>
+            <option value="en aprobación">En aprobación</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="rechazada">Rechazada</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="clearFactSearch()">✕</button>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="card-header" style="background:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-size:14px;font-weight:600;color:var(--navy)">Maestro de Facturas</h3>
+        <button class="btn btn-primary btn-sm" onclick="openFactModal()">➕ Nueva Factura</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>N° Factura</th><th>OC Asociada</th><th>Proveedor</th>
+          <th>Monto</th><th>F. Ingreso</th><th>F. Aprobación</th>
+          <th>Aprobó</th><th>Estado</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="maestro-fact-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="maestro-fact-empty"><div class="empty-icon">🧾</div>No hay facturas. Usa "Nueva Factura" para ingresar.</div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══ MODAL: IMPORTAR OC PDF ═══ -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📂 Importar OC desde Manager</h2>
+      <button class="modal-close" onclick="closeModal('modal-import')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info" style="margin-bottom:16px;font-size:12px">
+        Las OC importadas desde Manager se registran directamente como <strong>Aprobadas</strong>. Solo se lleva control de facturación y saldo.
+      </div>
+      <div class="import-zone" id="import-zone"
+        ondragover="handleDragOver(event)" ondragleave="handleDragLeave()" ondrop="handleDrop(event)">
+        <input type="file" accept=".pdf" onchange="handleFileSelect(event)" id="pdf-file-input"/>
+        <div class="zi">📄</div>
+        <div class="zt">Arrastra el PDF aquí o haz clic para seleccionar</div>
+        <div class="zs">Archivos OC generados en Manager · Máx 10MB</div>
+      </div>
+      <div class="imp-loading" id="imp-loading"><div class="spinner"></div><span>Leyendo PDF…</span></div>
+      <div class="imp-error" id="imp-error"></div>
+      <div class="imp-preview" id="imp-preview">
+        <h4>✅ Datos extraídos — revisa antes de guardar</h4>
+        <div class="prev-grid" id="prev-grid"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #BBF7D0">
+          <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:7px">Ítems detectados</div>
+          <div id="prev-items"></div>
+        </div>
+      </div>
+      <!-- Extra fields -->
+      <div id="imp-extra" style="display:none;margin-top:16px">
+        <div class="sec-div" style="margin-bottom:10px">Completar / corregir datos</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Proveedor (editable)</label><input type="text" id="imp-proveedor" placeholder="Nombre del proveedor"/></div>
+          <div class="form-group"><label>RUT Proveedor (editable)</label><input type="text" id="imp-prov-rut" placeholder="12.345.678-9"/></div>
+          <div class="form-group"><label>Empresa a facturar (Unidad negocio)</label><input type="text" id="imp-unidad" placeholder="Se extrae del PDF"/></div>
+          <div class="form-group"><label>Mail responsable compras</label><input type="email" id="imp-mail" placeholder="compras@empresa.cl"/></div>
+        </div>
+        <div id="imp-uf-note" style="display:none;margin-top:10px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400E">
+          ⚠️ Esta OC está expresada en <strong>UF</strong>. El monto mostrado es el valor numérico en UF. Puedes corregirlo manualmente al valor en pesos si lo necesitas.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-primary" id="imp-btn-save" style="display:none" onclick="saveImportedOC()">✅ Guardar OC Aprobada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: NUEVA FACTURA ═══ -->
+<div class="modal-overlay" id="modal-fact">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="fact-modal-title">🧾 Ingresar Factura</h2>
+      <button class="modal-close" onclick="closeModal('modal-fact')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>N° Factura *</label>
+          <input type="text" id="f-num" placeholder="Folio de la factura"/>
+        </div>
+        <div class="form-group">
+          <label>Fecha Factura *</label>
+          <input type="date" id="f-fecha"/>
+        </div>
+        <div class="form-group">
+          <label>OC Asociada *</label>
+          <select id="f-oc">
+            <option value="">— Selecciona una OC —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Proveedor</label>
+          <input type="text" id="f-prov" placeholder="Se completa al elegir OC" readonly/>
+        </div>
+        <div class="form-group form-full">
+          <label>Descripción / Glosa</label>
+          <input type="text" id="f-glosa" placeholder="Descripción del servicio o producto facturado"/>
+        </div>
+        <div class="sec-div">Montos</div>
+        <div class="form-group">
+          <label>Neto *</label>
+          <input type="number" id="f-neto" placeholder="0" oninput="calcFactTotals()"/>
+        </div>
+        <div class="form-group">
+          <label>IVA</label>
+          <input type="number" id="f-iva" placeholder="0" oninput="calcFactTotals()"/>
+        </div>
+        <div class="form-group">
+          <label>Total Factura</label>
+          <input type="number" id="f-total" placeholder="0" readonly/>
+        </div>
+        <div class="form-group">
+          <label>Mail responsable aprobación</label>
+          <input type="email" id="f-mail-aprov" placeholder="gerencia@empresa.cl"/>
+        </div>
+      </div>
+      <!-- Campo UF: solo visible si la OC seleccionada es en UF -->
+      <div id="f-uf-row" style="display:none;margin-top:12px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs)">
+        <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — la factura está en pesos pero la OC se lleva en UF</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:#92400E;white-space:nowrap">Valor UF del día de emisión:</label>
+            <input type="number" id="f-valor-uf" placeholder="ej: 38500" step="0.01"
+              style="padding:7px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:140px;background:#FFFDE7;color:#78350F;outline:none"
+              oninput="updateSaldoPreview()"/>
+          </div>
+          <span id="f-uf-equiv" style="font-size:12px;color:#78350F;font-weight:600"></span>
+        </div>
+        <div style="font-size:11px;color:#92400E;margin-top:6px">El sistema usará este valor para convertir $ → UF y calcular el saldo de la OC.</div>
+      </div>
+      <!-- Saldo OC preview -->
+      <div id="f-saldo-preview" style="display:none;margin-top:14px">
+        <div class="bbar-wrap">
+          <div class="bbar-labels">
+            <span id="f-saldo-label">Saldo OC</span>
+            <span id="f-saldo-pct"></span>
+          </div>
+          <div class="bbar"><div class="bbar-fill" id="f-saldo-fill" style="width:0%"></div></div>
+          <div class="bbar-sub" id="f-saldo-sub"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-fact')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFact()">💾 Ingresar Factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: IMPORTAR FACTURA PDF ═══ -->
+<div class="modal-overlay" id="modal-import-fact">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📥 Importar Factura desde PDF</h2>
+      <button class="modal-close" onclick="closeModal('modal-import-fact')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info" style="margin-bottom:16px;font-size:12px">
+        Sube el PDF de la factura electrónica. Se extraerán automáticamente el N°, proveedor, montos y fecha. Luego debes asociarla a una OC.
+      </div>
+      <div class="import-zone" id="import-fact-zone"
+        ondragover="handleFactDragOver(event)" ondragleave="handleFactDragLeave()" ondrop="handleFactDrop(event)">
+        <input type="file" accept=".pdf" onchange="handleFactFileSelect(event)" id="pdf-fact-input"/>
+        <div class="zi">🧾</div>
+        <div class="zt">Arrastra el PDF de la factura o haz clic para seleccionar</div>
+        <div class="zs">Factura electrónica en PDF · Máx 10MB</div>
+      </div>
+      <div class="imp-loading" id="imp-fact-loading"><div class="spinner"></div><span>Leyendo factura…</span></div>
+      <div class="imp-error" id="imp-fact-error"></div>
+      <div class="imp-preview" id="imp-fact-preview">
+        <h4>✅ Datos extraídos — revisa antes de guardar</h4>
+        <div class="prev-grid" id="prev-fact-grid"></div>
+      </div>
+      <!-- Campos a completar tras extracción -->
+      <div id="imp-fact-extra" style="display:none;margin-top:16px">
+        <div class="sec-div" style="margin-bottom:12px">Completar datos</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>OC Asociada *</label>
+            <select id="impf-oc">
+              <option value="">— Selecciona una OC —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Mail responsable aprobación</label>
+            <input type="email" id="impf-mail" placeholder="gerencia@empresa.cl"/>
+          </div>
+          <div class="form-group form-full">
+            <label>Descripción / Glosa (editable)</label>
+            <input type="text" id="impf-glosa" placeholder="Descripción del servicio facturado"/>
+          </div>
+        </div>
+        <!-- Campo UF: visible si la OC seleccionada es en UF -->
+        <div id="impf-uf-row" style="display:none;margin-top:12px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs)">
+          <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — ingresa el valor UF del día de emisión de esta factura</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="impf-valor-uf" placeholder="ej: 38500" step="0.01"
+              style="padding:7px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:150px;background:#FFFDE7;color:#78350F;outline:none"
+              oninput="updateImpfSaldo()"/>
+            <span id="impf-uf-equiv" style="font-size:12px;color:#78350F;font-weight:600"></span>
+          </div>
+        </div>
+        <!-- Saldo OC preview -->
+        <div id="impf-saldo-wrap" style="display:none;margin-top:12px">
+          <div class="bbar-wrap">
+            <div class="bbar-labels"><span id="impf-saldo-label"></span><span id="impf-saldo-pct"></span></div>
+            <div class="bbar"><div class="bbar-fill" id="impf-saldo-fill" style="width:0%"></div></div>
+            <div class="bbar-sub" id="impf-saldo-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-import-fact')">Cancelar</button>
+      <button class="btn btn-primary" id="impf-btn-save" style="display:none" onclick="saveImportedFact()">💾 Ingresar Factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: DETALLE FACTURA ═══ -->
+<div class="modal-overlay" id="modal-fact-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="fdet-title">Factura</h2>
+      <button class="modal-close" onclick="closeModal('modal-fact-detail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="fdet-alert"></div>
+      <div class="detail-grid" id="fdet-info"></div>
+      <div id="fdet-actions" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-fact-detail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: DETALLE OC ═══ -->
+<div class="modal-overlay" id="modal-oc-detail">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="ocdet-title">OC</h2>
+      <button class="modal-close" onclick="closeModal('modal-oc-detail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" id="ocdet-info"></div>
+      <div style="margin-top:6px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ítems OC</div>
+        <table class="items-tbl" style="font-size:12.5px">
+          <thead><tr><th style="width:55%">Descripción</th><th>Cant.</th><th>P.Unit.</th><th>Total</th></tr></thead>
+          <tbody id="ocdet-items"></tbody>
+        </table>
+        <div class="totals-box" style="margin-top:8px">
+          <div class="tot-row"><span>Subtotal (Neto)</span><span id="ocdet-sub"></span></div>
+          <div class="tot-row"><span>IVA</span><span id="ocdet-iva"></span></div>
+          <div class="tot-row big"><span>TOTAL OC</span><span id="ocdet-total"></span></div>
+        </div>
+      </div>
+      <div style="margin-top:20px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Control de Facturas asociadas</div>
+        <div id="ocdet-bbar"></div>
+        <div id="ocdet-facturas"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-oc-detail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,27,45,.85);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:20px">
+  <div style="background:#fff;border-radius:16px;padding:40px 48px;text-align:center;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:40px;margin-bottom:14px">📋</div>
+    <h2 style="font-size:20px;font-weight:700;color:#0F1B2D;margin-bottom:8px">Control OC & Facturas</h2>
+    <p style="font-size:13px;color:#64748B;margin-bottom:24px">Inicia sesión con tu cuenta Microsoft para acceder al sistema compartido.</p>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="signIn()">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" style="width:16px;height:16px"> &nbsp;Iniciar sesión con Microsoft
+    </button>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:36px;height:36px;border:3px solid #E2E8F0;border-top-color:#0EA5E9;border-radius:50%;animation:spin .7s linear infinite"></div>
+  <div style="font-size:13px;color:#64748B;font-weight:600">Sincronizando con SharePoint…</div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"><span id="notif-text"></span></div>
+
+<script>
+// ══════════════════════════════
+// ══════════════════════════════
+// CONFIG — edit config.js or set here
+// ══════════════════════════════
+const GRAPH_CONFIG = window.OC_CONFIG || {
+  clientId:    'REPLACE_WITH_CLIENT_ID',      // Azure App Registration Client ID
+  tenantId:    'REPLACE_WITH_TENANT_ID',      // Azure Tenant ID
+  siteId:      'REPLACE_WITH_SITE_ID',        // SharePoint Site ID (from Graph Explorer)
+  listOC:      'OC_Control',                  // SharePoint List name for OC
+  listFacturas:'Facturas_Control',            // SharePoint List name for Facturas
+};
+
+// ══════════════════════════════
+// AUTH — MSAL (Microsoft Authentication Library)
+// ══════════════════════════════
+let msalInstance = null;
+let graphToken   = null;
+let currentUser  = null;
+
+async function initMSAL() {
+  // Load MSAL from CDN
+  if (!window.msal) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId:    GRAPH_CONFIG.clientId,
+      authority:   `https://login.microsoftonline.com/${GRAPH_CONFIG.tenantId}`,
+      redirectUri: window.location.origin + window.location.pathname,
+    },
+    cache: { cacheLocation: 'sessionStorage' },
+  });
+  await msalInstance.initialize();
+
+  // Handle redirect response
+  const resp = await msalInstance.handleRedirectPromise();
+  if (resp) graphToken = resp.accessToken;
+
+  // Check if already signed in
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    currentUser = accounts[0];
+    try {
+      const tr = await msalInstance.acquireTokenSilent({
+        scopes: ['Sites.ReadWrite.All'],
+        account: currentUser,
+      });
+      graphToken = tr.accessToken;
+    } catch (e) {
+      graphToken = null;
+    }
+  }
+}
+
+async function signIn() {
+  try {
+    const resp = await msalInstance.loginPopup({
+      scopes: ['Sites.ReadWrite.All', 'User.Read'],
+    });
+    graphToken  = resp.accessToken;
+    currentUser = resp.account;
+    updateAuthUI();
+    await loadAllData();
+  } catch (e) {
+    console.error('Sign in error', e);
+    notify('Error al iniciar sesión: ' + e.message, 'error');
+  }
+}
+
+async function signOut() {
+  await msalInstance.logoutPopup();
+  graphToken = null; currentUser = null;
+  ocData = []; factData = [];
+  updateAuthUI();
+}
+
+async function getToken() {
+  if (!currentUser) return null;
+  try {
+    const tr = await msalInstance.acquireTokenSilent({
+      scopes: ['Sites.ReadWrite.All'],
+      account: currentUser,
+    });
+    graphToken = tr.accessToken;
+    return graphToken;
+  } catch {
+    // Silent failed — interactive
+    try {
+      const tr = await msalInstance.acquireTokenPopup({ scopes: ['Sites.ReadWrite.All'] });
+      graphToken = tr.accessToken;
+      return graphToken;
+    } catch (e) {
+      notify('Sesión expirada. Por favor vuelve a iniciar sesión.', 'error');
+      return null;
+    }
+  }
+}
+
+function updateAuthUI() {
+  const bar = document.getElementById('auth-bar');
+  const overlay = document.getElementById('auth-overlay');
+  if (currentUser) {
+    bar.innerHTML = `<span style="font-size:12px;color:var(--gray-500)">👤 ${currentUser.name || currentUser.username}</span>
+      <button class="btn btn-secondary btn-sm" onclick="signOut()">Cerrar sesión</button>`;
+    if (overlay) overlay.style.display = 'none';
+  } else {
+    bar.innerHTML = `<button class="btn btn-primary btn-sm" onclick="signIn()">🔐 Iniciar sesión con Microsoft</button>`;
+    if (overlay) overlay.style.display = 'flex';
+  }
+}
+
+// ══════════════════════════════
+// GRAPH API — SharePoint Lists
+// ══════════════════════════════
+const GRAPH_BASE = `https://graph.microsoft.com/v1.0/sites/${GRAPH_CONFIG.siteId}`;
+
+async function graphGet(url) {
+  const token = await getToken();
+  if (!token) throw new Error('No auth token');
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
+  if (!r.ok) throw new Error(`Graph GET ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function graphPost(url, body) {
+  const token = await getToken();
+  if (!token) throw new Error('No auth token');
+  const r = await fetch(url, { method:'POST', headers: { Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`Graph POST ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function graphPatch(url, body) {
+  const token = await getToken();
+  if (!token) throw new Error('No auth token');
+  const r = await fetch(url, { method:'PATCH', headers: { Authorization:`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`Graph PATCH ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+async function graphDelete(url) {
+  const token = await getToken();
+  if (!token) throw new Error('No auth token');
+  const r = await fetch(url, { method:'DELETE', headers: { Authorization:`Bearer ${token}` } });
+  if (!r.ok) throw new Error(`Graph DELETE ${r.status}: ${await r.text()}`);
+}
+
+// Serialize OC to SharePoint fields
+function ocToFields(oc) {
+  return { fields: {
+    Title:        oc.noc,
+    NocManager:   oc.nocManager||'',
+    Fecha:        oc.fecha||'',
+    Unidad:       oc.unidad||'',
+    UnidadRut:    oc.unidadRut||'',
+    Proveedor:    oc.proveedor||'',
+    ProvRut:      oc.provRut||'',
+    ItemsJSON:    JSON.stringify(oc.items||[]),
+    Subtotal:     oc.subtotal||0,
+    Iva:          oc.iva||0,
+    Total:        oc.total||0,
+    Estado:       oc.estado||'aprobada',
+    IsUF:         oc.isUF||false,
+    OrigenPDF:    oc.origenPDF||false,
+    Observaciones:oc.observaciones||'',
+    MailCompras:  oc.mailCompras||'',
+  }};
+}
+function fieldsToOC(item) {
+  const f = item.fields;
+  return {
+    _spId:        item.id,
+    noc:          f.Title||'',
+    nocManager:   f.NocManager||'',
+    fecha:        f.Fecha||'',
+    unidad:       f.Unidad||'',
+    unidadRut:    f.UnidadRut||'',
+    proveedor:    f.Proveedor||'',
+    provRut:      f.ProvRut||'',
+    items:        JSON.parse(f.ItemsJSON||'[]'),
+    subtotal:     parseFloat(f.Subtotal)||0,
+    iva:          parseFloat(f.Iva)||0,
+    total:        parseFloat(f.Total)||0,
+    estado:       f.Estado||'aprobada',
+    isUF:         f.IsUF||false,
+    origenPDF:    f.OrigenPDF||false,
+    observaciones:f.Observaciones||'',
+    mailCompras:  f.MailCompras||'',
+  };
+}
+function factToFields(f) {
+  return { fields: {
+    Title:          f.id,
+    Num:            f.num||'',
+    OcId:           f.ocId||'',
+    Proveedor:      f.proveedor||'',
+    RutProveedor:   f.rutProveedor||'',
+    Receptor:       f.receptor||'',
+    RutReceptor:    f.rutReceptor||'',
+    Glosa:          f.glosa||'',
+    FechaIngreso:   f.fechaIngreso||'',
+    FechaVenc:      f.fechaVenc||'',
+    FormaPago:      f.formaPago||'',
+    Neto:           f.neto||0,
+    Iva:            f.iva||0,
+    Total:          f.total||0,
+    ValorUF:        f.valorUF||0,
+    MailAprov:      f.mailAprov||'',
+    Estado:         f.estado||'ingresada',
+    FechaAprobacion:f.fechaAprobacion||'',
+    Aprobo:         f.aprobo||'',
+    OrigenPDF:      f.origenPDF||false,
+  }};
+}
+function fieldsToFact(item) {
+  const f = item.fields;
+  return {
+    _spId:          item.id,
+    id:             f.Title||'',
+    num:            f.Num||'',
+    ocId:           f.OcId||'',
+    proveedor:      f.Proveedor||'',
+    rutProveedor:   f.RutProveedor||'',
+    receptor:       f.Receptor||'',
+    rutReceptor:    f.RutReceptor||'',
+    glosa:          f.Glosa||'',
+    fechaIngreso:   f.FechaIngreso||'',
+    fechaVenc:      f.FechaVenc||'',
+    formaPago:      f.FormaPago||'',
+    neto:           parseFloat(f.Neto)||0,
+    iva:            parseFloat(f.Iva)||0,
+    total:          parseFloat(f.Total)||0,
+    valorUF:        parseFloat(f.ValorUF)||0,
+    mailAprov:      f.MailAprov||'',
+    estado:         f.Estado||'ingresada',
+    fechaAprobacion:f.FechaAprobacion||'',
+    aprobo:         f.Aprobo||'',
+    origenPDF:      f.OrigenPDF||false,
+  };
+}
+
+// ── CRUD OC ──
+async function loadAllData() {
+  showLoadingOverlay(true);
+  try {
+    const [ocResp, factResp] = await Promise.all([
+      graphGet(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items?$expand=fields&$top=999`),
+      graphGet(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items?$expand=fields&$top=999`),
+    ]);
+    ocData   = (ocResp.value   || []).map(fieldsToOC);
+    factData = (factResp.value || []).map(fieldsToFact);
+    refreshDashboard(); renderMaestroOC(); renderMaestroFact();
+  } catch (e) {
+    console.error('loadAllData', e);
+    notify('Error cargando datos: ' + e.message, 'error');
+  } finally {
+    showLoadingOverlay(false);
+  }
+}
+
+async function saveOCToGraph(oc) {
+  try {
+    if (oc._spId) {
+      await graphPatch(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items/${oc._spId}`, ocToFields(oc));
+    } else {
+      const created = await graphPost(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items`, ocToFields(oc));
+      oc._spId = created.id;
+    }
+  } catch (e) { notify('Error guardando OC: ' + e.message, 'error'); throw e; }
+}
+
+async function deleteOCFromGraph(oc) {
+  if (!oc._spId) return;
+  await graphDelete(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items/${oc._spId}`);
+}
+
+async function saveFactToGraph(fact) {
+  try {
+    if (fact._spId) {
+      await graphPatch(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items/${fact._spId}`, factToFields(fact));
+    } else {
+      const created = await graphPost(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items`, factToFields(fact));
+      fact._spId = created.id;
+    }
+  } catch (e) { notify('Error guardando Factura: ' + e.message, 'error'); throw e; }
+}
+
+async function deleteFactFromGraph(fact) {
+  if (!fact._spId) return;
+  await graphDelete(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items/${fact._spId}`);
+}
+
+// ══════════════════════════════
+// DATA (in-memory cache)
+// ══════════════════════════════
+let ocData   = [];
+let factData = [];
+let currentFactId = null;
+
+// saveAll now syncs to Graph (called after in-memory updates)
+async function saveAll() { /* data saved individually via saveOCToGraph/saveFactToGraph */ }
+
+function getNextOCNum() {
+  const y = new Date().getFullYear();
+  const nums = ocData.filter(o => o.noc?.startsWith(`OC-${y}-`)).map(o => parseInt(o.noc.split('-')[2]||0));
+  return `OC-${y}-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4,'0')}`;
+}
+function getNextFactNum() {
+  const nums = factData.map(f => parseInt(f.id?.replace('F-','')||0));
+  return `F-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(5,'0')}`;
+}
+
+function showLoadingOverlay(show) {
+  const el = document.getElementById('loading-overlay');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+// ── Computed: total facturado en pesos por OC ──
+function facturadoByOC(nocId) {
+  return factData.filter(f => f.ocId === nocId).reduce((s,f) => s+(f.total||0), 0);
+}
+// Para OC en UF: convierte pesos de cada factura a UF usando valorUF guardado
+function facturadoByOCenUF(nocId) {
+  return factData.filter(f => f.ocId === nocId).reduce((s,f) => {
+    if (f.valorUF && f.valorUF > 0) return s + (f.total / f.valorUF);
+    return s;
+  }, 0);
+}
+// Retorna objeto de saldo según tipo de OC (UF o pesos)
+function saldoOC(oc) {
+  if (oc.isUF) {
+    const ufUsado  = facturadoByOCenUF(oc.noc);
+    const pesosUsado = facturadoByOC(oc.noc);
+    const ufSaldo  = oc.total - ufUsado;
+    const pct      = oc.total > 0 ? Math.min(ufUsado/oc.total*100, 100) : 0;
+    return { isUF:true, ufTotal:oc.total, ufUsado, ufSaldo, pesosUsado, pct, over: ufUsado > oc.total };
+  }
+  const usado = facturadoByOC(oc.noc);
+  const saldo = oc.total - usado;
+  const pct   = oc.total > 0 ? Math.min(usado/oc.total*100, 100) : 0;
+  return { isUF:false, usado, saldo, pct, over: usado > oc.total };
+}
+
+// ══════════════════════════════
+// NAVIGATION
+// ══════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const map = { dashboard:'Dashboard', 'maestro-oc':'Maestro de OC', 'maestro-fact':'Maestro de Facturas' };
+  document.getElementById('page-title').textContent = map[id] || '';
+  if (id === 'dashboard')     refreshDashboard();
+  if (id === 'maestro-oc')    renderMaestroOC();
+  if (id === 'maestro-fact')  renderMaestroFact();
+  // Highlight nav
+  const labels = { dashboard:'dashboard','maestro-oc':'maestro de oc','maestro-fact':'maestro de fact' };
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(labels[id]?.toLowerCase()||'__')) n.classList.add('active');
+  });
+  // Special: set dashboard active
+  if (id==='dashboard') document.querySelector('.nav-item')?.classList.add('active');
+}
+
+// ══════════════════════════════
+// DASHBOARD
+// ══════════════════════════════
+function refreshDashboard() {
+  // Stats facturas
+  const total   = factData.length;
+  const pend    = factData.filter(f => f.estado === 'en aprobación').length;
+  const aprov   = factData.filter(f => f.estado === 'aprobada').length;
+  const montoAp = factData.filter(f => f.estado === 'aprobada').reduce((s,f) => s+(f.total||0), 0);
+
+  document.getElementById('s-fact-total').textContent  = total;
+  document.getElementById('s-fact-pend').textContent   = pend;
+  document.getElementById('s-fact-aprov').textContent  = aprov;
+  document.getElementById('s-monto-aprov').textContent = fmtCLP(montoAp);
+
+  // Saldo OC
+  const saldoList = document.getElementById('saldo-oc-list');
+  if (!ocData.length) {
+    saldoList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Sin OC registradas aún</div>';
+  } else {
+    saldoList.innerHTML = ocData.map(oc => {
+      const s = saldoOC(oc);
+      const cls   = s.over ? 'over' : s.pct > 80 ? 'warn' : '';
+      const saldoCls = s.over ? 'zero' : s.pct > 80 ? 'low' : '';
+      const saldoLine = s.isUF
+        ? `<div class="oc-saldo-disp ${saldoCls}">UF ${fmtUF(s.ufSaldo)}</div>
+           <div style="font-size:10px;color:var(--gray-400);margin-top:1px">${fmtCLP(s.pesosUsado)} facturado en $</div>`
+        : `<div class="oc-saldo-disp ${saldoCls}">${fmtCLP(Math.max(s.saldo,0))}</div>`;
+      const usadoLabel = s.isUF
+        ? `UF ${fmtUF(s.ufUsado)} de UF ${fmtUF(s.ufTotal)} (${s.pct.toFixed(0)}%)`
+        : `Facturado ${fmtCLP(s.usado)} de ${fmtCLP(oc.total)} (${s.pct.toFixed(0)}%)`;
+      return `
+        <div class="oc-saldo-card">
+          <div class="oc-saldo-left">
+            <div class="oc-saldo-num">${oc.noc}${oc.nocManager?' · Manager N°'+oc.nocManager:''}${oc.isUF?' <span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:1px 5px;border-radius:3px;font-weight:700">UF</span>':''}</div>
+            <div class="oc-saldo-prov">${oc.proveedor||'—'}</div>
+            <div class="oc-saldo-meta">${oc.unidad||''} · ${fmt(oc.fecha)}</div>
+          </div>
+          <div class="oc-saldo-bar-wrap">
+            <div style="font-size:11px;color:var(--gray-500);margin-bottom:4px">${usadoLabel}</div>
+            <div class="bbar"><div class="bbar-fill ${cls}" style="width:${s.pct}%"></div></div>
+            ${s.over ? `<div style="font-size:11px;color:var(--red);margin-top:3px">⚠️ Excedido en ${s.isUF?'UF '+fmtUF(s.ufUsado-s.ufTotal):fmtCLP(s.usado-oc.total)}</div>` : ''}
+            ${s.isUF && factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length > 0
+              ? `<div style="font-size:11px;color:var(--gold);margin-top:3px">⚠️ ${factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length} factura(s) sin valor UF ingresado</div>` : ''}
+          </div>
+          <div class="oc-saldo-right">
+            <div class="oc-saldo-total">Saldo disponible</div>
+            ${saldoLine}
+            <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="openOCDetail('${oc.noc}')">Ver OC</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('saldo-summary').textContent =
+    `${ocData.length} OC · ${fmtCLP(ocData.reduce((s,o)=>s+o.total,0))} presupuestado`;
+
+  // Facturas tabla en dashboard
+  const tbody = document.getElementById('dash-fact-tbody');
+  const empty = document.getElementById('dash-fact-empty');
+  if (!factData.length) { tbody.innerHTML=''; empty.style.display='block'; }
+  else {
+    empty.style.display='none';
+    tbody.innerHTML = [...factData].reverse().slice(0,20).map(f => `
+      <tr>
+        <td><strong>${f.num}</strong></td>
+        <td><span style="font-size:11px;color:var(--accent);font-weight:700">${f.ocId||'—'}</span></td>
+        <td>${f.proveedor||'—'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${fmtCLP(f.total)}</td>
+        <td>${fmt(f.fechaIngreso)}</td>
+        <td><span class="${badgeFact(f.estado)}">${f.estado}</span></td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openFactDetail('${f.id}')">Ver</button></td>
+      </tr>`).join('');
+  }
+
+  // Chart: facturas por estado
+  const estadoGroups = {};
+  factData.forEach(f => estadoGroups[f.estado] = (estadoGroups[f.estado]||0)+1);
+  const eColors = { ingresada:'#94A3B8','en aprobación':'#F59E0B', aprobada:'#10B981', rechazada:'#EF4444' };
+  document.getElementById('chart-fact-estado').innerHTML =
+    Object.entries(estadoGroups).map(([k,v]) => `
+      <div class="bar-row">
+        <span style="font-size:12px;color:var(--gray-700);text-transform:capitalize">${k}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${total?(v/total*100):0}%;background:${eColors[k]||'#94A3B8'}"></div></div>
+        <div class="bar-val">${v}</div>
+      </div>`).join('') || '<p style="color:var(--gray-400);font-size:12px">Sin datos</p>';
+
+  // Chart: OC por uso %
+  document.getElementById('chart-oc-uso').innerHTML =
+    ocData.slice(0,6).map(oc => {
+      const usado = facturadoByOC(oc.noc);
+      const pct = oc.total > 0 ? Math.min(usado/oc.total*100,100) : 0;
+      const color = pct > 100 ? '#EF4444' : pct > 80 ? '#F59E0B' : '#10B981';
+      return `
+        <div class="bar-row">
+          <span style="font-size:11px;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${oc.noc}">${oc.noc}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="bar-val">${pct.toFixed(0)}%</div>
+        </div>`;
+    }).join('') || '<p style="color:var(--gray-400);font-size:12px">Sin OC</p>';
+}
+
+// ══════════════════════════════
+// MAESTRO OC
+// ══════════════════════════════
+function renderMaestroOC() {
+  const tbody = document.getElementById('maestro-oc-tbody');
+  const empty = document.getElementById('maestro-oc-empty');
+  if (!ocData.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = [...ocData].reverse().map(oc => {
+    const s = saldoOC(oc);
+    const totalDisp  = oc.isUF ? `UF ${fmtUF(oc.total)}` : fmtCLP(oc.total);
+    const usadoDisp  = oc.isUF ? `UF ${fmtUF(s.ufUsado)}` : fmtCLP(s.usado||0);
+    const saldoDisp  = oc.isUF
+      ? `UF ${fmtUF(s.ufSaldo)}<br><span style="font-size:10px;color:var(--gray-400)">${fmtCLP(s.pesosUsado)} en $</span>`
+      : fmtCLP(s.saldo||0);
+    const saldoColor = s.over ? 'var(--red)' : 'var(--green)';
+    return `
+      <tr>
+        <td><strong>${oc.noc}</strong></td>
+        <td style="font-size:12px;color:var(--accent)">${oc.nocManager||'—'}</td>
+        <td>${fmt(oc.fecha)}</td>
+        <td style="font-size:12px">${oc.unidad||'—'}</td>
+        <td>${oc.proveedor||'—'}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${oc.isUF?'UF '+fmtUF(oc.subtotal||0):fmtCLP(oc.subtotal||0)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${oc.isUF?'UF '+fmtUF(oc.iva||0):fmtCLP(oc.iva||0)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${totalDisp}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple)">${usadoDisp}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${saldoColor}">${s.over?'⚠️ ':''} ${saldoDisp}</td>
+        <td><span style="font-size:9px;background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-weight:700">APROBADA</span>${oc.origenPDF?'<span style="font-size:9px;background:#EFF6FF;color:#1D4ED8;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">PDF</span>':''}${oc.isUF?'<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">UF</span>':''}</td>
+        <td style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="openOCDetail('${oc.noc}')">Ver</button>
+          <button class="btn btn-secondary btn-sm" onclick="openEditOC('${oc.noc}')" title="Editar">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteOC('${oc.noc}')" title="Eliminar">🗑️</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════
+// MAESTRO FACTURAS
+// ══════════════════════════════
+function renderMaestroFact() {
+  const q      = (document.getElementById('fact-search')?.value||'').toLowerCase();
+  const estado = document.getElementById('fact-search-estado')?.value||'';
+  const data   = factData.filter(f => {
+    const mq = !q || f.num?.toLowerCase().includes(q) || f.proveedor?.toLowerCase().includes(q) || f.ocId?.toLowerCase().includes(q);
+    const me = !estado || f.estado === estado;
+    return mq && me;
+  });
+  const tbody = document.getElementById('maestro-fact-tbody');
+  const empty = document.getElementById('maestro-fact-empty');
+  if (!data.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = [...data].reverse().map(f => `
+    <tr>
+      <td><strong>${f.num}</strong>${f.origenPDF?'<span style="font-size:9px;background:#EFF6FF;color:#1D4ED8;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:700">PDF</span>':''}</td>
+      <td><span style="font-size:11px;color:var(--accent);font-weight:700">${f.ocId||'—'}</span></td>
+      <td>${f.proveedor||'—'}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${fmtCLP(f.total)}</td>
+      <td>${fmt(f.fechaIngreso)}</td>
+      <td>${f.fechaAprobacion?fmt(f.fechaAprobacion):'—'}</td>
+      <td style="font-size:12px">${f.aprobo||'—'}</td>
+      <td><span class="${badgeFact(f.estado)}">${f.estado}</span></td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="openFactDetail('${f.id}')">Ver</button>
+        ${f.estado==='ingresada'?`<button class="btn btn-gold btn-sm" onclick="quickSendApproval('${f.id}')">→ Aprob.</button>`:''}
+        ${f.estado==='en aprobación'?`<button class="btn btn-success btn-sm" onclick="quickApprove('${f.id}')">✅</button>`:''}
+        <button class="btn btn-secondary btn-sm" onclick="openEditFact('${f.id}')" title="Editar">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteFact('${f.id}')" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+function clearFactSearch() {
+  document.getElementById('fact-search').value='';
+  document.getElementById('fact-search-estado').value='';
+  renderMaestroFact();
+}
+
+// ══════════════════════════════
+// MODAL FACTURA
+// ══════════════════════════════
+function openFactModal(prefillOC) {
+  // Reset
+  ['f-num','f-glosa','f-neto','f-iva','f-total','f-mail-aprov'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-saldo-preview').style.display = 'none';
+
+  // Fill OC select
+  const sel = document.getElementById('f-oc');
+  sel.innerHTML = '<option value="">— Selecciona una OC —</option>' +
+    ocData.map(oc => `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${fmtCLP(oc.total - facturadoByOC(oc.noc))}</option>`).join('');
+  if (prefillOC) sel.value = prefillOC;
+
+  sel.onchange = () => {
+    const oc = ocData.find(o => o.noc === sel.value);
+    if (oc) {
+      document.getElementById('f-prov').value = oc.proveedor||'';
+      // Show/hide UF field
+      const ufRow = document.getElementById('f-uf-row');
+      if (ufRow) ufRow.style.display = oc.isUF ? 'flex' : 'none';
+      updateSaldoPreview();
+    }
+  };
+  if (prefillOC) sel.onchange();
+
+  document.getElementById('modal-fact').classList.add('open');
+}
+
+function calcFactTotals() {
+  const neto = parseFloat(document.getElementById('f-neto').value)||0;
+  const iva  = parseFloat(document.getElementById('f-iva').value)||0;
+  document.getElementById('f-total').value = neto + iva;
+  updateSaldoPreview();
+}
+
+function updateSaldoPreview() {
+  const ocId  = document.getElementById('f-oc').value;
+  const total = parseFloat(document.getElementById('f-total').value)||0;
+  const oc    = ocData.find(o => o.noc === ocId);
+  if (!oc) { document.getElementById('f-saldo-preview').style.display='none'; return; }
+
+  document.getElementById('f-saldo-preview').style.display = 'block';
+
+  if (oc.isUF) {
+    const valorUF = parseFloat(document.getElementById('f-valor-uf')?.value)||0;
+    const ufFact  = valorUF > 0 ? total / valorUF : 0;
+    const ufUsado = facturadoByOCenUF(ocId);
+    const ufNuevo = ufUsado + ufFact;
+    const pct     = oc.total > 0 ? Math.min(ufNuevo/oc.total*100,100) : 0;
+    const over    = ufNuevo > oc.total;
+    const cls     = over ? 'over' : pct > 80 ? 'warn' : '';
+    document.getElementById('f-saldo-label').textContent = `OC ${ocId} (UF) — Total: UF ${fmtUF(oc.total)}`;
+    document.getElementById('f-saldo-pct').textContent   = valorUF > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa valor UF para calcular';
+    document.getElementById('f-saldo-fill').style.width  = pct + '%';
+    document.getElementById('f-saldo-fill').className    = `bbar-fill ${cls}`;
+    document.getElementById('f-saldo-sub').textContent   = valorUF > 0
+      ? (over ? `⚠️ Excede UF ${fmtUF(ufNuevo-oc.total)}` : `Saldo UF: ${fmtUF(oc.total-ufNuevo)} · Esta factura = UF ${fmtUF(ufFact)}`)
+      : 'Ingresa el valor UF del día de emisión para ver el saldo';
+  } else {
+    const usado = facturadoByOC(ocId);
+    const nuevo = usado + total;
+    const pct   = oc.total > 0 ? Math.min(nuevo/oc.total*100,100) : 0;
+    const over  = nuevo > oc.total;
+    const saldo = oc.total - nuevo;
+    const cls   = over ? 'over' : pct > 80 ? 'warn' : '';
+    document.getElementById('f-saldo-label').textContent = `OC ${ocId} — Total: ${fmtCLP(oc.total)}`;
+    document.getElementById('f-saldo-pct').textContent   = `${pct.toFixed(1)}% utilizado`;
+    document.getElementById('f-saldo-fill').style.width  = pct + '%';
+    document.getElementById('f-saldo-fill').className    = `bbar-fill ${cls}`;
+    document.getElementById('f-saldo-sub').textContent   = over
+      ? `⚠️ Esta factura excede el saldo OC en ${fmtCLP(Math.abs(saldo))}`
+      : `Saldo restante tras esta factura: ${fmtCLP(saldo)}`;
+  }
+}
+
+function saveFact() {
+  const num   = document.getElementById('f-num').value.trim();
+  const ocId  = document.getElementById('f-oc').value;
+  const neto  = parseFloat(document.getElementById('f-neto').value)||0;
+  const iva   = parseFloat(document.getElementById('f-iva').value)||0;
+  const total = neto + iva;
+
+  if (!num)   { notify('Ingresa el N° de factura','error'); return; }
+  if (!ocId)  { notify('Selecciona la OC asociada','error'); return; }
+  if (!neto)  { notify('Ingresa el monto neto','error'); return; }
+
+  const oc = ocData.find(o => o.noc === ocId);
+  const valorUF = oc?.isUF ? (parseFloat(document.getElementById('f-valor-uf')?.value)||0) : 0;
+  if (oc?.isUF && !valorUF) { notify('Debes ingresar el valor UF del día de emisión para OC en UF','error'); return; }
+
+  const fact = {
+    id: getNextFactNum(), num, ocId,
+    proveedor:  oc?.proveedor || '',
+    glosa:      document.getElementById('f-glosa').value.trim(),
+    fechaIngreso: document.getElementById('f-fecha').value,
+    neto, iva, total, valorUF,
+    mailAprov:  document.getElementById('f-mail-aprov').value.trim(),
+    estado: 'ingresada', fechaAprobacion: null, aprobo: null,
+    createdAt: new Date().toISOString(),
+  };
+
+  // Budget overrun check
+  const s = saldoOC({...oc});
+  let over = false;
+  if (oc.isUF && valorUF > 0) {
+    const ufFact = total / valorUF;
+    over = (s.ufUsado + ufFact) > oc.total;
+  } else if (!oc.isUF) {
+    over = (facturadoByOC(ocId) + total) > oc.total;
+  }
+  if (over) {
+    simulateMail('compras@empresa.cl', `⚠️ Excedente OC ${ocId}`, `Factura N°${num} excede el saldo de OC ${ocId}.`);
+    notify(`⚠️ Factura ingresada pero EXCEDE el saldo de ${oc.noc}. Alerta enviada.`, 'warning');
+  } else {
+    notify(`✅ Factura N°${num} ingresada correctamente`, 'success');
+  }
+
+  factData.push(fact);
+  saveFactToGraph(fact).then(() => {
+    closeModal('modal-fact');
+    refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+  }).catch(()=>{});
+}
+
+// ══════════════════════════════
+// DETALLE FACTURA
+// ══════════════════════════════
+function openFactDetail(id) {
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  currentFactId = id;
+
+  document.getElementById('fdet-title').textContent = `Factura N° ${f.num}`;
+
+  // Alert banner
+  const alertEl = document.getElementById('fdet-alert');
+  alertEl.innerHTML = '';
+  if (f.estado === 'en aprobación') {
+    alertEl.innerHTML = `<div class="alert-banner alert-warn" style="margin-bottom:14px">⚠️ Esta factura está pendiente de aprobación.</div>`;
+  }
+
+  const fields = [
+    ['ID Sistema', f.id],
+    ['N° Factura', f.num],
+    ['OC Asociada', `<span style="color:var(--accent);font-weight:700">${f.ocId||'—'}</span>`],
+    ['Proveedor (Emisor)', f.proveedor||'—'],
+    ['RUT Proveedor', f.rutProveedor||'—'],
+    ['Receptor', f.receptor||'—'],
+    ['RUT Receptor', f.rutReceptor||'—'],
+    ['Glosa', f.glosa||'—'],
+    ['Forma Pago', f.formaPago||'—'],
+    ['Neto', fmtCLP(f.neto)],
+    ['IVA', fmtCLP(f.iva)],
+    ['Total', `<strong style="color:var(--navy)">${fmtCLP(f.total)}</strong>`],
+    ['F. Emisión', fmt(f.fechaIngreso)],
+    ['F. Vencimiento', f.fechaVenc ? fmt(f.fechaVenc) : '—'],
+    ['F. Aprobación', f.fechaAprobacion ? fmt(f.fechaAprobacion) : '—'],
+    ['Aprobó', f.aprobo||'—'],
+    ['Estado', `<span class="${badgeFact(f.estado)}">${f.estado}</span>`],
+  ];
+  document.getElementById('fdet-info').innerHTML = fields.map(([l,v]) =>
+    `<div class="d-field"><div class="dl">${l}</div><div class="dv">${v}</div></div>`).join('');
+
+  // Actions
+  const acts = document.getElementById('fdet-actions');
+  acts.innerHTML = '';
+  if (f.estado === 'ingresada') {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-gold';
+    btn.textContent = '📤 Enviar a aprobación';
+    btn.onclick = () => sendToApproval(id);
+    acts.appendChild(btn);
+  }
+  if (f.estado === 'en aprobación') {
+    const ba = document.createElement('button');
+    ba.className = 'btn btn-success';
+    ba.textContent = '✅ Marcar como Aprobada';
+    ba.onclick = () => approveFactPrompt(id);
+    acts.appendChild(ba);
+    const br = document.createElement('button');
+    br.className = 'btn btn-danger';
+    br.textContent = '❌ Rechazar';
+    br.onclick = () => rejectFact(id);
+    acts.appendChild(br);
+  }
+
+  document.getElementById('modal-fact-detail').classList.add('open');
+}
+
+async function sendToApproval(id) {
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  f.estado = 'en aprobación';
+  await saveFactToGraph(f);
+  if (f.mailAprov) simulateMail(f.mailAprov, `Factura N°${f.num} pendiente de aprobación`,
+    `Se ha enviado para su aprobación la Factura N°${f.num} del proveedor ${f.proveedor} por ${fmtCLP(f.total)}, asociada a OC ${f.ocId}.`);
+  notify(`📤 Factura N°${f.num} enviada a aprobación. Mail simulado.`, 'success');
+  closeModal('modal-fact-detail');
+  refreshDashboard(); renderMaestroFact();
+}
+
+async function quickSendApproval(id) {
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  f.estado = 'en aprobación';
+  await saveFactToGraph(f);
+  notify(`📤 Factura N°${f.num} → En aprobación`, 'success');
+  refreshDashboard(); renderMaestroFact();
+}
+
+async function approveFactPrompt(id) {
+  const nombre = prompt('Nombre de quien aprueba:');
+  if (!nombre) return;
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  f.estado = 'aprobada';
+  f.fechaAprobacion = new Date().toISOString().split('T')[0];
+  f.aprobo = nombre;
+  await saveFactToGraph(f);
+  notify(`✅ Factura N°${f.num} aprobada por ${nombre}`, 'success');
+  closeModal('modal-fact-detail');
+  refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+}
+
+async function quickApprove(id) {
+  const nombre = prompt('Nombre de quien aprueba:');
+  if (!nombre) return;
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  f.estado = 'aprobada';
+  f.fechaAprobacion = new Date().toISOString().split('T')[0];
+  f.aprobo = nombre;
+  await saveFactToGraph(f);
+  notify(`✅ Factura N°${f.num} aprobada`, 'success');
+  refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+}
+
+async function rejectFact(id) {
+  if (!confirm('¿Confirmas rechazar esta factura?')) return;
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  f.estado = 'rechazada';
+  await saveFactToGraph(f);
+  notify(`❌ Factura N°${f.num} rechazada`, 'error');
+  closeModal('modal-fact-detail');
+  refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+}
+
+// ══════════════════════════════
+// DETALLE OC
+// ══════════════════════════════
+function openOCDetail(noc) {
+  const oc = ocData.find(o => o.noc === noc);
+  if (!oc) return;
+
+  document.getElementById('ocdet-title').textContent = `OC ${oc.noc} — ${oc.proveedor}`;
+
+  const fields = [
+    ['N° OC Sistema', oc.noc],
+    ['N° Manager', oc.nocManager||'—'],
+    ['Estado', '<span class="badge badge-aprobada">aprobada</span>'],
+    ['Fecha', fmt(oc.fecha)],
+    ['Empresa', oc.unidad||'—'],
+    ['RUT Empresa', oc.unidadRut||'—'],
+    ['Proveedor', oc.proveedor||'—'],
+    ['RUT Proveedor', oc.provRut||'—'],
+    ...(oc.observaciones ? [['Observaciones', oc.observaciones]] : []),
+  ];
+  document.getElementById('ocdet-info').innerHTML = fields.map(([l,v]) =>
+    `<div class="d-field"><div class="dl">${l}</div><div class="dv">${v}</div></div>`).join('');
+
+  document.getElementById('ocdet-items').innerHTML = (oc.items||[]).map(i =>
+    `<tr><td>${i.desc}</td><td>${i.qty}</td><td>${fmtCLP(i.price)}</td><td>${fmtCLP(i.qty*i.price)}</td></tr>`
+  ).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--gray-400)">Sin ítems</td></tr>';
+
+  document.getElementById('ocdet-sub').textContent   = fmtCLP(oc.subtotal||0);
+  document.getElementById('ocdet-iva').textContent   = fmtCLP(oc.iva||0);
+  document.getElementById('ocdet-total').textContent = fmtCLP(oc.total);
+
+  // Budget bar — dual UF/pesos
+  const s = saldoOC(oc);
+  const bbarHtml = oc.isUF ? `
+    <div class="bbar-wrap">
+      <div class="bbar-labels"><span>UF utilizada: ${fmtUF(s.ufUsado)} / UF ${fmtUF(s.ufTotal)}</span><span>${s.pct.toFixed(1)}%</span></div>
+      <div class="bbar"><div class="bbar-fill ${s.over?'over':s.pct>80?'warn':''}" style="width:${s.pct}%"></div></div>
+      <div class="bbar-sub">${s.over?`⚠️ Excedido en UF ${fmtUF(s.ufUsado-s.ufTotal)}`:`Saldo UF: ${fmtUF(s.ufSaldo)}`}</div>
+    </div>
+    <div class="uf-block" style="margin-top:10px">
+      <div class="uf-title">Resumen en ambas monedas</div>
+      <div class="uf-row"><span class="ul">Total OC</span><span class="uv">UF ${fmtUF(oc.total)}</span></div>
+      <div class="uf-row"><span class="ul">Facturado (en $)</span><span class="uv">${fmtCLP(s.pesosUsado)}</span></div>
+      <div class="uf-row"><span class="ul">Facturado (en UF)</span><span class="uv">UF ${fmtUF(s.ufUsado)}</span></div>
+      <div class="uf-row"><span class="ul">Saldo disponible</span><span class="uv" style="color:${s.over?'var(--red)':'var(--green)'}">UF ${fmtUF(s.ufSaldo)}</span></div>
+      ${factData.filter(f=>f.ocId===noc && !f.valorUF).length?`<div style="font-size:11px;color:var(--gold);margin-top:6px">⚠️ ${factData.filter(f=>f.ocId===noc && !f.valorUF).length} factura(s) sin valor UF — no incluidas en el cálculo UF</div>`:''}
+    </div>` : `
+    <div class="bbar-wrap">
+      <div class="bbar-labels"><span>Facturado ${fmtCLP(s.usado||0)} / ${fmtCLP(oc.total)}</span><span>${s.pct.toFixed(1)}%</span></div>
+      <div class="bbar"><div class="bbar-fill ${s.over?'over':s.pct>80?'warn':''}" style="width:${s.pct}%"></div></div>
+      <div class="bbar-sub">${s.over?`⚠️ Excedido en ${fmtCLP(s.usado-oc.total)}`:`Saldo disponible: ${fmtCLP(s.saldo)}`}</div>
+    </div>`;
+  document.getElementById('ocdet-bbar').innerHTML = bbarHtml;
+
+  const facts = factData.filter(f => f.ocId === noc);
+  document.getElementById('ocdet-facturas').innerHTML = facts.length
+    ? facts.map(f => {
+        const ufLine = oc.isUF && f.valorUF
+          ? `<span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 5px;border-radius:3px">UF ${fmtUF(f.total/f.valorUF)} · @${fmtCLP(f.valorUF)}</span>`
+          : oc.isUF ? `<span style="font-size:10px;color:var(--gold)">⚠️ Sin valor UF</span>` : '';
+        return `
+          <div class="inv-card">
+            <div class="ic-left">
+              <div class="ic-num">🧾 Factura N° ${f.num}</div>
+              <div class="ic-meta">${fmt(f.fechaIngreso)} · ${f.glosa||'—'}</div>
+              ${ufLine}
+            </div>
+            <div class="ic-right">
+              <span class="${badgeFact(f.estado)}">${f.estado}</span>
+              <strong>${fmtCLP(f.total)}</strong>
+              <button class="btn btn-secondary btn-sm" onclick="openFactDetail('${f.id}')">Ver</button>
+            </div>
+          </div>`;
+      }).join('')
+    : `<p style="font-size:12px;color:var(--gray-400);margin-top:8px">No hay facturas asociadas aún.<br>
+       <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="closeModal('modal-oc-detail');openFactModal('${noc}')">➕ Ingresar factura para esta OC</button></p>`;
+
+  document.getElementById('modal-oc-detail').classList.add('open');
+}
+
+// ══════════════════════════════
+// PDF IMPORT (pdf.js)
+// ══════════════════════════════
+let importedOCData = null;
+let pdfjsLib = null;
+
+async function loadPdfJs() {
+  if (pdfjsLib) return pdfjsLib;
+  return new Promise((resolve, reject) => {
+    if (window.pdfjsLib) { pdfjsLib = window.pdfjsLib; resolve(pdfjsLib); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      pdfjsLib = window.pdfjsLib; resolve(pdfjsLib);
+    };
+    s.onerror = () => reject(new Error('No se pudo cargar pdf.js'));
+    document.head.appendChild(s);
+  });
+}
+
+function openImportModal() {
+  importedOCData = null;
+  const fi = document.getElementById('pdf-file-input'); if(fi) fi.value='';
+  ['imp-loading','imp-error','imp-preview'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('imp-extra').style.display = 'none';
+  document.getElementById('imp-btn-save').style.display = 'none';
+  document.getElementById('modal-import').classList.add('open');
+}
+
+function handleDragOver(e)  { e.preventDefault(); document.getElementById('import-zone').classList.add('drag-over'); }
+function handleDragLeave()  { document.getElementById('import-zone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault(); handleDragLeave();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type==='application/pdf') processPDF(f);
+  else showImpError('Solo se aceptan archivos PDF.');
+}
+function handleFileSelect(e) { const f = e.target.files[0]; if(f) processPDF(f); }
+
+async function processPDF(file) {
+  if (file.size > 10*1024*1024) { showImpError('Archivo supera 10MB.'); return; }
+  document.getElementById('imp-loading').classList.add('show');
+  document.getElementById('imp-error').classList.remove('show');
+  document.getElementById('imp-preview').classList.remove('show');
+  try {
+    await loadPdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = '';
+    for (let p=1; p<=pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(i=>i.str).join(' ') + '\n';
+    }
+    console.log('[PDF]', text);
+    importedOCData = parseManagerOC(text);
+    showImpPreview(importedOCData);
+  } catch(err) {
+    showImpError('Error leyendo PDF: ' + err.message);
+  } finally {
+    document.getElementById('imp-loading').classList.remove('show');
+  }
+}
+
+function parseManagerOC(text) {
+  const first = re => { const m=text.match(re); return m ? m[1].trim() : ''; };
+
+  // Convierte string de monto a número entero
+  // Soporta: "1.186.500" → 1186500 | "3.820,4000" → 3820 | "$ 1.186.500" → 1186500
+  function parseMonto(s) {
+    if (!s) return 0;
+    let c = s.replace(/\$/g,'').replace(/UF/gi,'').replace(/\s/g,'').trim();
+    // Formato chileno: punto=miles, coma=decimal  → "1.186.500" o "3.820,4000"
+    if (c.includes(',')) {
+      // Tiene coma → coma es decimal, puntos son miles
+      c = c.replace(/\./g,'').replace(',','.');
+    } else {
+      // Solo puntos → son miles (formato chileno normal)
+      c = c.replace(/\./g,'');
+    }
+    return Math.round(parseFloat(c)) || 0;
+  }
+
+  // ── N° OC ──
+  const nocManager = first(/Orden de Compra\s*N[°oº]?\s*(\d+)/i)
+                  || first(/OC\s*N[°oº]?\s*(\d+)/i);
+
+  // ── Fecha documento ──
+  let fecha = '';
+  const fd = first(/Fecha Documento\s*[:\-]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i)
+          || first(/(\d{2}\/\d{2}\/\d{4})/);
+  if (fd) {
+    const p = fd.split(/[\/\-]/);
+    if (p.length===3 && p[2].length===4) fecha = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  }
+
+  // ── Empresa emisora (primera línea con SPA/LTDA/SA en el encabezado) ──
+  const unidadM = text.match(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s]+(?:SPA|LTDA|S\.A\.|SA|SpA|EIRL))/im)
+               || text.match(/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s]{4,60}(?:SPA|LTDA|SA|SpA))/i);
+  const unidad = unidadM ? unidadM[1].trim() : '';
+
+  // ── RUTs ──
+  const allRuts = [...text.matchAll(/(?:RUT|Rut)\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
+  const unidadRut = allRuts[0]?.[1] || '';
+  // RUT proveedor: el último que aparece (viene después de "Rut :" en la sección del receptor)
+  const provRut = allRuts.length > 1 ? allRuts[allRuts.length-1][1] : (allRuts[0]?.[1] || '');
+
+  // ── Proveedor: campo "Señor(es)" ──
+  // El texto de pdf.js une todo en una línea, ej: "Señor(es) : AGUIRRE Y AGUIRRE ... Fecha Documento : ..."
+  // Capturamos todo entre "Señor(es) :" y el siguiente campo conocido
+  const provM = text.match(/Se[ñn]or(?:es)?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i);
+  const proveedor = provM ? provM[1].trim().replace(/\s+/g,' ') : '';
+
+  // ── Montos: buscar en sección "Facturación" ──
+  // Soporta "$" y "UF" como prefijo/sufijo de monto
+  // Formato: "Neto : $ 1.186.500" o "Neto : UF 3.820,4000"
+  const netoStr  = first(/Neto\s*[:\-]\s*(?:\$|UF)?\s*([\d\.\,]+)/i);
+  const ivaStr   = first(/IVA\s*[:\-]\s*(?:\$|UF)?\s*([\d\.\,]+)/i);
+  // Para el total buscamos específicamente el último "Total :" que aparece en la sección de facturación
+  // Evitamos que tome la columna "Total" de la tabla de ítems (que puede tener el mismo valor)
+  const totalMatches = [...text.matchAll(/Total\s*[:\-]\s*(?:\$|UF)?\s*([\d\.\,]+)/gi)];
+  const totalStr = totalMatches.length ? totalMatches[totalMatches.length-1][1] : '';
+
+  const subtotal = parseMonto(netoStr);
+  const iva      = parseMonto(ivaStr);
+  const total    = parseMonto(totalStr) || subtotal + iva;
+
+  // ── Ítems ──
+  // Patrón Manager: código + DESCRIPCIÓN EN CAPS + S.U.M + cantidad + precio_unit + dcto + total_item
+  // Ejemplo: "430130- E OTROS GASTOS EXENTO S.U.M 1 UF 3.820,4000 UF 0,0000 UF 3.820,4000"
+  const items = [];
+
+  // Buscar descripción larga (la que viene debajo del código, en texto mixto)
+  // En Manager la descripción real viene DESPUÉS del código y la línea de cantidades
+  const descLargaM = text.match(/(?:S\.U\.M|SUM)\s+\d+.*?(?:\n|\r|\s{3,})([A-ZÁÉÍÓÚÑ][a-záéíóúñ][^\n\r]{15,200})/i)
+                  || text.match(/Observaciones\s*[:\-]?\s*\n?\s*([A-ZÁÉÍÓÚÑ][a-záéíóúñ][^\n\r]{15,180})/i);
+  const descLarga = descLargaM ? descLargaM[1].trim().replace(/\s+/g,' ') : '';
+
+  // Descripción corta (código de la tabla)
+  const descCortaM = text.match(/\d+\s+[\w\-]+\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{3,60?})\s+S\.?U\.?M/i);
+  const descCorta  = descCortaM ? descCortaM[1].trim().replace(/\s+/g,' ') : '';
+
+  // Usamos la descripción larga si existe, si no la corta
+  const desc = descLarga || descCorta || first(/Observaciones\s*[:\-]?\s*\n?\s*([^\n\r]{10,150})/i) || 'Servicio/Producto OC N°'+nocManager;
+
+  if (subtotal > 0) {
+    items.push({ desc, qty: 1, price: subtotal });
+  }
+
+  // Detect UF-based OC
+  const _isUF = /UF\s*[\d\.,]+/i.test(text);
+
+  const obs = first(/Observaciones\s*[:\-]?\s*\n?\s*([^\n\r]{10,200})/i);
+
+  return { nocManager, fecha, unidad, unidadRut, proveedor, provRut, subtotal, iva, total, items, observaciones: obs || '', _isUF };
+}
+
+function showImpError(msg) {
+  const el = document.getElementById('imp-error');
+  el.textContent = '⚠️ ' + msg; el.classList.add('show');
+  document.getElementById('imp-loading').classList.remove('show');
+}
+
+function showImpPreview(d) {
+  // Detect if UF-based OC
+  const isUF = /UF\s*[\d\.,]+/i.test(d._rawText || '');
+
+  const fields = [
+    ['N° OC Manager', d.nocManager||'—'], ['Fecha', d.fecha||'—'],
+    ['Empresa emisora', d.unidad||'—'], ['RUT Emisor', d.unidadRut||'—'],
+    ['Proveedor', d.proveedor||'⚠️ No detectado — completa abajo'],
+    ['RUT Proveedor', d.provRut||'—'],
+    ['Neto', (d._isUF?'UF ':'')+fmtCLP(d.subtotal)],
+    ['IVA',  (d._isUF?'UF ':'')+fmtCLP(d.iva)],
+    ['Total',(d._isUF?'UF ':'')+fmtCLP(d.total)],
+  ];
+  document.getElementById('prev-grid').innerHTML = fields.map(([l,v]) =>
+    `<div class="prev-field"><span class="pl">${l}:</span> <span style="${!v||v.startsWith('⚠️')?'color:var(--gold);font-weight:600':''}">${v}</span></div>`).join('');
+  document.getElementById('prev-items').innerHTML = (d.items||[]).map(i =>
+    `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid #BBF7D0;display:flex;justify-content:space-between;gap:12px">
+      <span>${i.qty} × ${i.desc}</span><span style="font-weight:600">${(d._isUF?'UF ':'')+fmtCLP(i.qty*i.price)}</span>
+    </div>`).join('') || '<span style="font-size:12px;color:var(--gray-400)">No se detectaron ítems</span>';
+  document.getElementById('imp-preview').classList.add('show');
+  document.getElementById('imp-extra').style.display = 'block';
+  // Prefill editable fields
+  document.getElementById('imp-unidad').value    = d.unidad    || '';
+  document.getElementById('imp-proveedor').value = d.proveedor || '';
+  document.getElementById('imp-prov-rut').value  = d.provRut   || '';
+  // Show UF warning if needed
+  document.getElementById('imp-uf-note').style.display = d._isUF ? 'block' : 'none';
+  document.getElementById('imp-btn-save').style.display = 'inline-flex';
+}
+
+function saveImportedOC() {
+  if (!importedOCData) return;
+  const d = importedOCData;
+  const noc       = getNextOCNum();
+  const unidad    = document.getElementById('imp-unidad').value.trim()    || d.unidad    || '';
+  const proveedor = document.getElementById('imp-proveedor').value.trim() || d.proveedor || '';
+  const provRut   = document.getElementById('imp-prov-rut').value.trim()  || d.provRut   || '';
+  const mail      = document.getElementById('imp-mail').value.trim();
+  const oc = {
+    noc, nocManager:d.nocManager||'', fecha:d.fecha||new Date().toISOString().split('T')[0],
+    unidad, unidadRut:d.unidadRut||'', proveedor, provRut,
+    items:d.items||[], subtotal:d.subtotal||0, iva:d.iva||0, total:d.total||0,
+    estado:'aprobada', origenPDF:true, isUF:d._isUF||false, mailCompras:mail,
+    observaciones:d.observaciones||'', createdAt:new Date().toISOString(),
+  };
+  ocData.push(oc);
+  saveOCToGraph(oc).then(() => {
+    closeModal('modal-import');
+    showPage('maestro-oc');
+    refreshDashboard(); renderMaestroOC();
+    notify(`✅ OC ${noc} registrada (Manager N°${d.nocManager}${d._isUF?' · UF':''}) — guardada en SharePoint`, 'success');
+  }).catch(()=>{});
+}
+
+// ══════════════════════════════
+// PDF IMPORT — FACTURAS
+// ══════════════════════════════
+let importedFactData = null;
+
+function openImportFactModal() {
+  importedFactData = null;
+  const fi = document.getElementById('pdf-fact-input'); if(fi) fi.value='';
+  ['imp-fact-loading','imp-fact-error','imp-fact-preview'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('imp-fact-extra').style.display = 'none';
+  document.getElementById('impf-btn-save').style.display = 'none';
+  document.getElementById('impf-saldo-wrap').style.display = 'none';
+  // Fill OC select
+  const sel = document.getElementById('impf-oc');
+  sel.innerHTML = '<option value="">— Selecciona una OC —</option>' +
+    ocData.map(oc => `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${fmtCLP(oc.total - facturadoByOC(oc.noc))}</option>`).join('');
+  sel.onchange = updateImpfSaldo;
+  document.getElementById('modal-import-fact').classList.add('open');
+}
+
+function handleFactDragOver(e)  { e.preventDefault(); document.getElementById('import-fact-zone').classList.add('drag-over'); }
+function handleFactDragLeave()  { document.getElementById('import-fact-zone').classList.remove('drag-over'); }
+function handleFactDrop(e) {
+  e.preventDefault(); handleFactDragLeave();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type==='application/pdf') processFactPDF(f);
+  else showImpFactError('Solo se aceptan archivos PDF.');
+}
+function handleFactFileSelect(e) { const f = e.target.files[0]; if(f) processFactPDF(f); }
+
+async function processFactPDF(file) {
+  if (file.size > 10*1024*1024) { showImpFactError('Archivo supera 10MB.'); return; }
+  document.getElementById('imp-fact-loading').classList.add('show');
+  document.getElementById('imp-fact-error').classList.remove('show');
+  document.getElementById('imp-fact-preview').classList.remove('show');
+  document.getElementById('imp-fact-extra').style.display = 'none';
+  document.getElementById('impf-btn-save').style.display = 'none';
+  try {
+    await loadPdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = '';
+    for (let p=1; p<=pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(i=>i.str).join(' ') + '\n';
+    }
+    console.log('[FACT PDF]', text);
+    importedFactData = parseFacturaPDF(text);
+    showImpFactPreview(importedFactData);
+  } catch(err) {
+    showImpFactError('Error leyendo PDF: ' + err.message);
+  } finally {
+    document.getElementById('imp-fact-loading').classList.remove('show');
+  }
+}
+
+// ── Parser factura electrónica chilena ──
+// Calibrado con formato Acepta/Manager: VIVETSOFT SPA, Factura Electrónica Nº 207
+function parseFacturaPDF(text) {
+  const first = re => { const m=text.match(re); return m ? m[1].trim() : ''; };
+  function parseMonto(s) {
+    if (!s) return 0;
+    const c = s.replace(/\$/g,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');
+    return Math.round(parseFloat(c)) || 0;
+  }
+
+  // ── N° Factura ──
+  // Formatos: "Nº 207", "N° 207", "Factura Electrónica Nº 207", "Nro. 207"
+  const numFact = first(/FACTURA\s+ELECTR[ÓO]NICA\s+N[°oº]?\s*\.?\s*(\d+)/i)
+               || first(/N[°oº]\s*\.?\s*(\d+)/i)
+               || first(/Nro\.?\s*(\d+)/i);
+
+  // ── Fecha emisión ──
+  let fechaEmision = '';
+  // Formatos: "06 JUNIO 2026", "06/06/2026", "2026-06-06"
+  const mesesES = { enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12 };
+  const fdLarga = text.match(/(\d{1,2})\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4})/i);
+  if (fdLarga) {
+    const d=fdLarga[1].padStart(2,'0'), mes=String(mesesES[fdLarga[2].toLowerCase()]).padStart(2,'0'), y=fdLarga[3];
+    fechaEmision = `${y}-${mes}-${d}`;
+  } else {
+    const fd = first(/Fecha\s+Emis(?:i[oó]n)?\s*[:\.]?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i)
+             || first(/(\d{2}\/\d{2}\/\d{4})/);
+    if (fd) { const p=fd.split(/[\/\-]/); if(p.length===3 && p[2].length===4) fechaEmision=`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; }
+  }
+
+  // ── Emisor (proveedor que emite la factura) ──
+  // Primera línea grande en mayúsculas antes de "FACTURA ELECTRÓNICA"
+  const emisorM = text.match(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,60}(?:SPA|LTDA|S\.A\.|SA|SpA|EIRL))/im)
+               || text.match(/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,50}(?:SPA|LTDA|SA|SpA|EIRL))/i);
+  const emisor = emisorM ? emisorM[1].trim() : '';
+
+  // ── RUT Emisor ──
+  const allRuts = [...text.matchAll(/R\.?U\.?T\.?\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
+  const rutEmisor    = allRuts[0]?.[1] || '';
+
+  // ── Receptor (empresa a quien se factura) ──
+  const receptor = first(/Se[ñn]or\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][^\n\r\$]{3,60?})(?:\s{2,}|R\.U\.T|$)/i);
+  const rutReceptor  = allRuts[1]?.[1] || '';
+
+  // ── Montos ──
+  const neto  = parseMonto(first(/Monto\s+Neto\s*\$?\s*([\d\.\,]+)/i)  || first(/Neto\s*[:\$]\s*([\d\.\,]+)/i));
+  const iva   = parseMonto(first(/Monto\s+I\.?V\.?A\.?\s*\$?\s*([\d\.\,]+)/i) || first(/IVA\s*[:\$]\s*([\d\.\,]+)/i));
+  const total = parseMonto(first(/Monto\s+Total\s*\$?\s*([\d\.\,]+)/i)  || first(/Total\s*\$?\s*([\d\.\,]+)/i)) || neto+iva;
+
+  // ── Descripción / Glosa ──
+  // Buscar la descripción del ítem principal
+  const glosa = first(/Descripci[oó]n\s+([A-Za-záéíóúñÁÉÍÓÚÑ][^\n\r]{10,120})/i)
+             || first(/SERCOMP\w*\s+([^\n\r]{10,120})/i)
+             || first(/([A-ZÁÉÍÓÚÑ][a-záéíóúñ][^\n\r]{15,100}(?:servicio|trabajo|honorario|consultor|implementa|capacita)[^\n\r]{0,60})/i);
+
+  // ── Fecha vencimiento ──
+  let fechaVenc = '';
+  const fvM = text.match(/(\d{1,2})\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4}).*?(?:venc|pago)/is);
+  // Try to find the SECOND date (payment date)
+  const allDatesLarga = [...text.matchAll(/(\d{1,2})\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4})/gi)];
+  if (allDatesLarga.length > 1) {
+    const [,d,mes,y] = allDatesLarga[allDatesLarga.length-1];
+    fechaVenc = `${y}-${String(mesesES[mes.toLowerCase()]).padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+
+  return {
+    numFact, fechaEmision, fechaVenc,
+    emisor, rutEmisor,
+    receptor, rutReceptor,
+    neto, iva, total,
+    glosa: glosa || '',
+    formaPago: first(/Forma\s+De\s+Pago\s*[:\-]?\s*([^\n\r]{3,30})/i),
+  };
+}
+
+function showImpFactError(msg) {
+  const el = document.getElementById('imp-fact-error');
+  el.textContent = '⚠️ ' + msg; el.classList.add('show');
+  document.getElementById('imp-fact-loading').classList.remove('show');
+}
+
+function showImpFactPreview(d) {
+  const fields = [
+    ['N° Factura',    d.numFact       || '—'],
+    ['Fecha Emisión', d.fechaEmision  || '—'],
+    ['Fecha Venc.',   d.fechaVenc     || '—'],
+    ['Emisor (Prov.)',d.emisor        || '—'],
+    ['RUT Emisor',    d.rutEmisor     || '—'],
+    ['Receptor',      d.receptor      || '—'],
+    ['RUT Receptor',  d.rutReceptor   || '—'],
+    ['Forma Pago',    d.formaPago     || '—'],
+    ['Neto',          fmtCLP(d.neto)],
+    ['IVA',           fmtCLP(d.iva)],
+    ['Total',         fmtCLP(d.total)],
+  ];
+  document.getElementById('prev-fact-grid').innerHTML = fields.map(([l,v]) =>
+    `<div class="prev-field"><span class="pl">${l}:</span> <span>${v}</span></div>`).join('');
+  document.getElementById('imp-fact-preview').classList.add('show');
+  document.getElementById('imp-fact-extra').style.display = 'block';
+  // Pre-fill glosa
+  document.getElementById('impf-glosa').value = d.glosa || '';
+  document.getElementById('impf-btn-save').style.display = 'inline-flex';
+}
+
+function updateImpfSaldo() {
+  const ocId = document.getElementById('impf-oc').value;
+  const total = importedFactData?.total || 0;
+  const oc = ocData.find(o => o.noc === ocId);
+
+  // Show/hide UF row
+  const ufRow = document.getElementById('impf-uf-row');
+  if (ufRow) ufRow.style.display = oc?.isUF ? 'block' : 'none';
+
+  if (!oc || !total) { document.getElementById('impf-saldo-wrap').style.display='none'; return; }
+  document.getElementById('impf-saldo-wrap').style.display = 'block';
+
+  if (oc.isUF) {
+    const valorUF = parseFloat(document.getElementById('impf-valor-uf')?.value)||0;
+    const ufFact  = valorUF > 0 ? total / valorUF : 0;
+    const ufUsado = facturadoByOCenUF(ocId);
+    const ufNuevo = ufUsado + ufFact;
+    const pct     = oc.total > 0 ? Math.min(ufNuevo/oc.total*100,100) : 0;
+    const over    = ufNuevo > oc.total;
+    const cls     = over ? 'over' : pct > 80 ? 'warn' : '';
+    // Show equiv
+    const eqEl = document.getElementById('impf-uf-equiv');
+    if (eqEl && valorUF > 0) eqEl.textContent = `= UF ${fmtUF(ufFact)}`;
+    document.getElementById('impf-saldo-label').textContent  = `OC ${ocId} (UF) — Total: UF ${fmtUF(oc.total)}`;
+    document.getElementById('impf-saldo-pct').textContent    = valorUF > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa valor UF';
+    document.getElementById('impf-saldo-fill').style.width   = pct + '%';
+    document.getElementById('impf-saldo-fill').className     = `bbar-fill ${cls}`;
+    document.getElementById('impf-saldo-sub').textContent    = valorUF > 0
+      ? (over ? `⚠️ Excede en UF ${fmtUF(ufNuevo-oc.total)}` : `Saldo: UF ${fmtUF(oc.total-ufNuevo)} · Esta factura = UF ${fmtUF(ufFact)}`)
+      : 'Ingresa el valor UF del día de emisión para ver el saldo';
+  } else {
+    const usado = facturadoByOC(ocId);
+    const nuevo = usado + total;
+    const pct   = oc.total > 0 ? Math.min(nuevo/oc.total*100,100) : 0;
+    const over  = nuevo > oc.total;
+    const saldo = oc.total - nuevo;
+    const cls   = over ? 'over' : pct > 80 ? 'warn' : '';
+    document.getElementById('impf-saldo-label').textContent  = `OC ${ocId} — Total: ${fmtCLP(oc.total)}`;
+    document.getElementById('impf-saldo-pct').textContent    = `${pct.toFixed(1)}% utilizado`;
+    document.getElementById('impf-saldo-fill').style.width   = pct + '%';
+    document.getElementById('impf-saldo-fill').className     = `bbar-fill ${cls}`;
+    document.getElementById('impf-saldo-sub').textContent    = over
+      ? `⚠️ Excede el saldo en ${fmtCLP(Math.abs(saldo))}`
+      : `Saldo restante tras esta factura: ${fmtCLP(saldo)}`;
+  }
+}
+
+function saveImportedFact() {
+  if (!importedFactData) return;
+  const d     = importedFactData;
+  const ocId  = document.getElementById('impf-oc').value;
+  const mail  = document.getElementById('impf-mail').value.trim();
+  const glosa = document.getElementById('impf-glosa').value.trim();
+
+  if (!d.numFact) { notify('No se detectó N° de factura. Verifica el PDF.','error'); return; }
+  if (!ocId)      { notify('Debes seleccionar la OC asociada','error'); return; }
+
+  const oc = ocData.find(o => o.noc === ocId);
+
+  // For UF OCs require valorUF
+  let valorUF = 0;
+  if (oc?.isUF) {
+    const impfUFEl = document.getElementById('impf-valor-uf');
+    valorUF = impfUFEl ? parseFloat(impfUFEl.value)||0 : 0;
+    if (!valorUF) { notify('Esta OC es en UF. Ingresa el valor UF del día de emisión.','error'); return; }
+  }
+
+  const fact = {
+    id: getNextFactNum(), num: d.numFact, ocId,
+    proveedor:   d.emisor || oc?.proveedor || '',
+    rutProveedor:d.rutEmisor || '',
+    receptor:    d.receptor || '',
+    rutReceptor: d.rutReceptor || '',
+    glosa:       glosa || d.glosa || '',
+    fechaIngreso:d.fechaEmision || new Date().toISOString().split('T')[0],
+    fechaVenc:   d.fechaVenc || '',
+    formaPago:   d.formaPago || '',
+    neto: d.neto, iva: d.iva, total: d.total,
+    valorUF,
+    mailAprov: mail, estado: 'ingresada',
+    fechaAprobacion: null, aprobo: null,
+    origenPDF: true, createdAt: new Date().toISOString(),
+  };
+
+  // Budget alert
+  let over = false;
+  if (oc?.isUF && valorUF > 0) {
+    const ufFact = d.total / valorUF;
+    over = (facturadoByOCenUF(ocId) + ufFact) > oc.total;
+  } else if (oc && !oc.isUF) {
+    over = (facturadoByOC(ocId) + d.total) > oc.total;
+  }
+  if (over) {
+    simulateMail('compras@empresa.cl', `⚠️ Excedente OC ${ocId}`, `Factura N°${d.numFact} excede el saldo de OC ${ocId}.`);
+    notify(`⚠️ Factura N°${d.numFact} ingresada — EXCEDE saldo de ${ocId}. Alerta enviada.`, 'warning');
+  } else {
+    notify(`✅ Factura N°${d.numFact} importada correctamente — ${fmtCLP(d.total)}`, 'success');
+  }
+
+  factData.push(fact);
+  saveFactToGraph(fact).then(() => {
+    closeModal('modal-import-fact');
+    showPage('maestro-fact');
+    refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+  }).catch(()=>{});
+}
+
+// ══════════════════════════════
+// EDIT & DELETE
+// ══════════════════════════════
+async function deleteOC(noc) {
+  const oc = ocData.find(o => o.noc === noc);
+  if (!oc) return;
+  const factsCount = factData.filter(f => f.ocId === noc).length;
+  const msg = factsCount > 0
+    ? `⚠️ Esta OC tiene ${factsCount} factura(s) asociada(s).\n¿Eliminar la OC "${noc}" y desvincular sus facturas?`
+    : `¿Eliminar la OC "${noc}" — ${oc.proveedor}? Esta acción no se puede deshacer.`;
+  if (!confirm(msg)) return;
+  const ocToDelete = ocData.find(o => o.noc === noc);
+  ocData = ocData.filter(o => o.noc !== noc);
+  const affectedFacts = factData.filter(f => f.ocId === noc);
+  affectedFacts.forEach(f => { f.ocId = null; });
+  try {
+    if (ocToDelete) await deleteOCFromGraph(ocToDelete);
+    await Promise.all(affectedFacts.map(f => saveFactToGraph(f)));
+  } catch(e) { notify('Error eliminando OC: '+e.message,'error'); return; }
+  refreshDashboard(); renderMaestroOC();
+  notify(`🗑️ OC ${noc} eliminada`, 'success');
+}
+
+async function deleteFact(id) {
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  if (!confirm(`¿Eliminar la Factura N°${f.num} por ${fmtCLP(f.total)}? Esta acción no se puede deshacer.`)) return;
+  factData = factData.filter(x => x.id !== id);
+  try { await deleteFactFromGraph(f); } catch(e) { notify('Error eliminando: '+e.message,'error'); return; }
+  refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+  notify(`🗑️ Factura N°${f.num} eliminada`, 'success');
+}
+
+function openEditOC(noc) {
+  const oc = ocData.find(o => o.noc === noc);
+  if (!oc) return;
+  const campos = [
+    { label:'Proveedor',        key:'proveedor',  val:oc.proveedor||'' },
+    { label:'RUT Proveedor',    key:'provRut',    val:oc.provRut||'' },
+    { label:'Empresa (Unidad)', key:'unidad',     val:oc.unidad||'' },
+    { label:'N° Manager',       key:'nocManager', val:oc.nocManager||'' },
+    { label:'Total OC',         key:'total',      val:oc.total, type:'number' },
+  ];
+  let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando OC <strong>${noc}</strong></div>`;
+  html += '<div class="form-grid">';
+  campos.forEach(c => {
+    html += `<div class="form-group"><label>${c.label}</label>
+      <input type="${c.type||'text'}" id="edit-oc-${c.key}" value="${c.val}" style="width:100%"/></div>`;
+  });
+  html += '</div>';
+  showGenericModal('✏️ Editar OC', html, () => {
+    campos.forEach(c => {
+      const el = document.getElementById(`edit-oc-${c.key}`);
+      if (!el) return;
+      oc[c.key] = c.type === 'number' ? (parseFloat(el.value)||0) : el.value.trim();
+    });
+    saveOCToGraph(oc).then(()=>{ refreshDashboard(); renderMaestroOC(); notify(`✅ OC ${noc} actualizada`, 'success'); });
+  });
+}
+
+function openEditFact(id) {
+  const f = factData.find(x => x.id === id);
+  if (!f) return;
+  const oc = ocData.find(o => o.noc === f.ocId);
+  const campos = [
+    { label:'N° Factura',   key:'num',          val:f.num||'' },
+    { label:'Glosa',        key:'glosa',        val:f.glosa||'' },
+    { label:'Proveedor',    key:'proveedor',    val:f.proveedor||'' },
+    { label:'Neto ($)',     key:'neto',         val:f.neto, type:'number' },
+    { label:'IVA ($)',      key:'iva',          val:f.iva, type:'number' },
+    { label:'Mail Aprov.',  key:'mailAprov',    val:f.mailAprov||'' },
+    ...(oc?.isUF ? [{ label:'Valor UF del día', key:'valorUF', val:f.valorUF||'', type:'number' }] : []),
+  ];
+  let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando Factura <strong>N°${f.num}</strong></div>`;
+  if (oc?.isUF) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El valor UF es requerido para el cálculo de saldo.</div>`;
+  html += '<div class="form-grid">';
+  campos.forEach(c => {
+    html += `<div class="form-group"><label>${c.label}</label>
+      <input type="${c.type||'text'}" id="edit-f-${c.key}" value="${c.val}" style="width:100%"/></div>`;
+  });
+  html += '</div>';
+  showGenericModal('✏️ Editar Factura', html, () => {
+    campos.forEach(c => {
+      const el = document.getElementById(`edit-f-${c.key}`);
+      if (!el) return;
+      f[c.key] = c.type === 'number' ? (parseFloat(el.value)||0) : el.value.trim();
+    });
+    f.total = (f.neto||0) + (f.iva||0);
+    saveFactToGraph(f).then(()=>{ refreshDashboard(); renderMaestroFact(); renderMaestroOC(); notify(`✅ Factura N°${f.num} actualizada`, 'success'); });
+  });
+}
+
+// Generic edit modal
+function showGenericModal(title, bodyHtml, onSave) {
+  let modal = document.getElementById('modal-generic');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-generic';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:620px">
+        <div class="modal-header">
+          <h2 id="gm-title"></h2>
+          <button class="modal-close" onclick="closeModal('modal-generic')">✕</button>
+        </div>
+        <div class="modal-body" id="gm-body"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal('modal-generic')">Cancelar</button>
+          <button class="btn btn-primary" id="gm-save">💾 Guardar cambios</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('gm-title').textContent = title;
+  document.getElementById('gm-body').innerHTML = bodyHtml;
+  document.getElementById('gm-save').onclick = () => { onSave(); closeModal('modal-generic'); };
+  modal.classList.add('open');
+}
+
+// ══════════════════════════════
+// HELPERS
+// ══════════════════════════════
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function fmtCLP(n) { return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n||0); }
+function fmtUF(n)  { return new Intl.NumberFormat('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
+function fmt(d) { if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+function badgeFact(e) {
+  return { ingresada:'badge badge-ingresada', 'en aprobación':'badge badge-en-aprobacion', aprobada:'badge badge-aprobada', rechazada:'badge badge-rechazada' }[e] || 'badge badge-ingresada';
+}
+function notify(msg, type='success') {
+  const el = document.getElementById('notif');
+  document.getElementById('notif-text').textContent = msg;
+  el.className = `notif show ${type}`;
+  setTimeout(()=>el.classList.remove('show'), 5500);
+}
+function simulateMail(to, subject, body) {
+  console.log(`[MAIL] → ${to}\n${subject}\n${body}`);
+}
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Show auth overlay immediately while loading
+  document.getElementById('auth-overlay').style.display = 'flex';
+  try {
+    await initMSAL();
+    updateAuthUI();
+    if (currentUser) await loadAllData();
+    else refreshDashboard();
+  } catch(e) {
+    console.error('Init error', e);
+    notify('Error iniciando la aplicación: ' + e.message, 'error');
+    document.getElementById('auth-overlay').style.display = 'flex';
+  }
+});
+</script>
+</body>
+</html>
