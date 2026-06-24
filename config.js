@@ -4,4 +4,5 @@ window.OC_CONFIG = {
   siteId:   'mdaispacl.sharepoint.com,7cb9e51c-eb04-4ad4-b494-925672df9664,2dcf538a-5894-4ff2-8659-82f8b7e85a9e',
   listOC:       'OC_Control',
   listFacturas: 'Facturas_Control',
+  listUF: 'UF_Valores',
 };
