@@ -24,6 +24,8 @@ body{font-family:'Inter',sans-serif;background:#EEF2F7;color:var(--text);min-hei
 .sidebar{position:fixed;top:0;left:0;bottom:0;width:230px;background:var(--navy);display:flex;flex-direction:column;z-index:100}
 .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
 .logo-badge{display:inline-flex;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:15px}
+.logo-badge-v{display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:15px;text-align:center}
+.logo-icon-img{width:56px;height:56px;object-fit:cover;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
 .logo-sub{color:var(--gray-400);font-size:11px;font-weight:400;margin-top:2px}
 .sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
@@ -33,6 +35,8 @@ body{font-family:'Inter',sans-serif;background:#EEF2F7;color:var(--text);min-hei
 .nav-item.active{background:var(--accent);color:#fff}
 .nav-item .icon{width:18px;text-align:center;font-size:15px}
 .sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.35);font-size:11px}
+.footer-uf-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.15);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:10px;transition:background .15s}
+.footer-uf-btn:hover{background:rgba(255,255,255,.16)}
 
 /* MAIN */
 .main{margin-left:230px;min-height:100vh}
@@ -222,9 +226,10 @@ tbody td strong{color:var(--text);font-weight:600}
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-badge">
-      <div class="logo-icon">📋</div>
-      <div><div>Control Proveedores</div><div class="logo-sub">Compras & Facturas</div></div>
+    <div class="logo-badge-v">
+      <img class="logo-icon-img" alt="MDA Inmobiliaria" src="data:image/png;base64,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"/>
+      <div>Control Proveedores</div>
+      <div class="logo-sub">Compras & Facturas</div>
     </div>
   </div>
   <nav class="sidebar-nav">
@@ -235,7 +240,10 @@ tbody td strong{color:var(--text);font-weight:600}
     <div class="nav-sec">Facturas</div>
     <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro de Facturas</div>
   </nav>
-  <div class="sidebar-footer">v2.0 · Control Proveedores</div>
+  <div class="sidebar-footer">
+    <button class="footer-uf-btn" onclick="openUFModal()">📅 Cargar UF mensual</button>
+    <div>v2.0 · Control Proveedores</div>
+  </div>
 </aside>
 
 <main class="main">
@@ -574,6 +582,55 @@ tbody td strong{color:var(--text);font-weight:600}
   </div>
 </div>
 
+<!-- ═══ MODAL: CARGAR UF MENSUAL ═══ -->
+<div class="modal-overlay" id="modal-uf">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📅 Cargar Valores UF Mensuales</h2>
+      <button class="modal-close" onclick="closeModal('modal-uf')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info" style="margin-bottom:16px;font-size:12px">
+        La UF se publica de forma mensual: el valor de cada día rige desde el <strong>9 de un mes hasta el 9 del mes siguiente</strong>. Selecciona a qué periodo corresponde el archivo antes de cargarlo, así evitamos mezclar datos de meses distintos.
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Periodo (mes y año en que comienza, desde el día 9) *</label>
+        <div style="display:flex;gap:10px">
+          <select id="uf-mes" onchange="onUFPeriodoChange()" style="flex:1"></select>
+          <select id="uf-anio" onchange="onUFPeriodoChange()" style="width:110px"></select>
+        </div>
+        <div id="uf-periodo-range" style="font-size:11px;color:var(--gray-500);margin-top:5px"></div>
+        <div id="uf-existing-note" style="display:none;font-size:11px;color:var(--gold);margin-top:5px;font-weight:600"></div>
+      </div>
+      <div class="import-zone" id="uf-import-zone"
+        ondragover="handleUFDragOver(event)" ondragleave="handleUFDragLeave()" ondrop="handleUFDrop(event)">
+        <input type="file" accept=".xlsx,.xls" onchange="handleUFFileSelect(event)" id="uf-file-input"/>
+        <div class="zi">📊</div>
+        <div class="zt">Arrastra el Excel aquí o haz clic para seleccionar</div>
+        <div class="zs">Archivo .xlsx o .xls con los valores diarios de la UF · Máx 10MB</div>
+      </div>
+      <div class="imp-loading" id="uf-loading"><div class="spinner"></div><span>Leyendo Excel…</span></div>
+      <div class="imp-error" id="uf-error"></div>
+      <div class="imp-preview" id="uf-preview">
+        <h4 id="uf-preview-title">✅ Valores detectados — revisa antes de guardar</h4>
+        <div id="uf-range-warning" style="display:none;margin-bottom:10px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:10px 12px;font-size:12px;color:#92400E"></div>
+        <div style="max-height:260px;overflow-y:auto;border:1px solid #BBF7D0;border-radius:6px;background:#fff">
+          <table style="width:100%;font-size:12px;border-collapse:collapse">
+            <thead style="position:sticky;top:0;background:#F0FDF4">
+              <tr><th style="text-align:left;padding:6px 10px;color:#065F46">Fecha</th><th style="text-align:right;padding:6px 10px;color:#065F46">Valor UF</th></tr>
+            </thead>
+            <tbody id="uf-preview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-uf')">Cancelar</button>
+      <button class="btn btn-primary" id="uf-btn-save" style="display:none" onclick="saveUFData()">💾 Guardar valores UF</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: DETALLE FACTURA ═══ -->
 <div class="modal-overlay" id="modal-fact-detail">
   <div class="modal">
@@ -657,6 +714,7 @@ const GRAPH_CONFIG = window.OC_CONFIG || {
   siteId:      'REPLACE_WITH_SITE_ID',        // SharePoint Site ID (from Graph Explorer)
   listOC:      'OC_Control',                  // SharePoint List name for OC
   listFacturas:'Facturas_Control',            // SharePoint List name for Facturas
+  listUF:      'UF_Valores',                  // SharePoint List name for valores UF mensuales
 };
 
 // ══════════════════════════════
@@ -926,6 +984,14 @@ async function loadAllData() {
     ]);
     ocData   = (ocResp.value   || []).map(fieldsToOC);
     factData = (factResp.value || []).map(fieldsToFact);
+    // UF es opcional: si la lista UF_Valores aún no existe en SharePoint, no rompe la app
+    try {
+      const ufResp = await graphGet(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listUF}/items?$expand=fields&$top=999`);
+      ufData = (ufResp.value || []).map(fieldsToUF);
+    } catch (e) {
+      console.warn('No se pudo cargar UF_Valores (¿la lista no existe aún en SharePoint?)', e);
+      ufData = [];
+    }
     refreshDashboard(); renderMaestroOC(); renderMaestroFact();
   } catch (e) {
     console.error('loadAllData', e);
@@ -967,11 +1033,33 @@ async function deleteFactFromGraph(fact) {
   await graphDelete(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items/${fact._spId}`);
 }
 
+// Serialize UF a campos de SharePoint
+function ufToFields(u) {
+  return { fields: { Title: u.fecha, Valor: u.valor, Periodo: u.periodo || '' } };
+}
+function fieldsToUF(item) {
+  const f = item.fields;
+  return { _spId: item.id, fecha: f.Title||'', valor: parseFloat(f.Valor)||0, periodo: f.Periodo||'' };
+}
+async function saveUFToGraph(u) {
+  if (u._spId) {
+    await graphPatch(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listUF}/items/${u._spId}`, ufToFields(u));
+  } else {
+    const created = await graphPost(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listUF}/items`, ufToFields(u));
+    u._spId = created.id;
+  }
+}
+async function deleteUFFromGraph(u) {
+  if (!u._spId) return;
+  await graphDelete(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listUF}/items/${u._spId}`);
+}
+
 // ══════════════════════════════
 // DATA (in-memory cache)
 // ══════════════════════════════
 let ocData   = [];
 let factData = [];
+let ufData   = []; // [{ _spId, fecha:'YYYY-MM-DD', valor:Number, periodo:'YYYY-MM' }]
 let currentFactId = null;
 
 // saveAll now syncs to Graph (called after in-memory updates)
@@ -2041,6 +2129,262 @@ function saveImportedFact() {
     showPage('maestro-fact');
     refreshDashboard(); renderMaestroFact(); renderMaestroOC();
   }).catch(()=>{});
+}
+
+// ══════════════════════════════
+// CARGA DE UF MENSUAL (Excel)
+// ══════════════════════════════
+// La UF se publica mensualmente: el valor de cada día rige desde el 9 de un
+// mes hasta el 9 del mes siguiente. El usuario elige a qué periodo (mes de
+// inicio) corresponde el archivo antes de cargarlo, para evitar mezclar datos.
+let ufParsedData      = null; // [{fecha:'YYYY-MM-DD', valor:Number}, ...] tras parsear el Excel
+let ufSelectedPeriodo = null; // { value:'YYYY-MM', label, start:Date, end:Date }
+
+const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function pad2(n) { return String(n).padStart(2,'0'); }
+function dToISO(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function dToShort(d) { return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}`; }
+
+// Carga SheetJS (xlsx) probando 3 fuentes distintas, igual patrón que con MSAL
+function loadXLSXLib() {
+  if (window.XLSX) return Promise.resolve();
+  const sources = [
+    'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+    'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  ];
+  return new Promise((resolve, reject) => {
+    let i = 0;
+    function tryNext() {
+      if (window.XLSX) { resolve(); return; }
+      if (i >= sources.length) {
+        reject(new Error('No se pudo cargar la librería de lectura de Excel desde ningún servidor. Verifica tu conexión a internet.'));
+        return;
+      }
+      const url = sources[i]; i++;
+      const s = document.createElement('script');
+      s.src = url;
+      s.onload = () => resolve();
+      s.onerror = () => tryNext();
+      document.head.appendChild(s);
+    }
+    tryNext();
+  });
+}
+
+// Rango de años seleccionables (8 años hacia atrás, 1 hacia adelante — permite cargar periodos históricos)
+function getUFYearOptions() {
+  const y = new Date().getFullYear();
+  const years = [];
+  for (let i = y - 8; i <= y + 1; i++) years.push(i);
+  return years;
+}
+
+// Construye el objeto de periodo (rango día 9 → día 9) a partir de mes (0-11) y año elegidos
+function getUFPeriodo(mesIdx, anio) {
+  const start = new Date(anio, mesIdx, 9);
+  const end   = new Date(anio, mesIdx + 1, 9);
+  const value = `${start.getFullYear()}-${pad2(start.getMonth()+1)}`;
+  const label = `${MESES_ES[mesIdx]} ${anio}`;
+  return { value, label, start, end };
+}
+
+function openUFModal() {
+  ufParsedData = null;
+  const fi = document.getElementById('uf-file-input'); if (fi) fi.value = '';
+  ['uf-loading','uf-error','uf-preview'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('uf-btn-save').style.display = 'none';
+  document.getElementById('uf-range-warning').style.display = 'none';
+
+  const selMes  = document.getElementById('uf-mes');
+  const selAnio = document.getElementById('uf-anio');
+  selMes.innerHTML  = MESES_ES.map((m,i) => `<option value="${i}">${m}</option>`).join('');
+  selAnio.innerHTML = getUFYearOptions().map(y => `<option value="${y}">${y}</option>`).join('');
+
+  const now = new Date();
+  selMes.value  = now.getMonth();
+  selAnio.value = now.getFullYear();
+
+  onUFPeriodoChange();
+  document.getElementById('modal-uf').classList.add('open');
+}
+
+function onUFPeriodoChange() {
+  const mesIdx = parseInt(document.getElementById('uf-mes').value, 10);
+  const anio   = parseInt(document.getElementById('uf-anio').value, 10);
+  if (isNaN(mesIdx) || isNaN(anio)) return;
+  const opt = getUFPeriodo(mesIdx, anio);
+  ufSelectedPeriodo = opt;
+  document.getElementById('uf-periodo-range').textContent =
+    `Periodo: del ${dToShort(opt.start)} al ${dToShort(opt.end)}`;
+
+  // Aviso si ya hay datos cargados para este periodo (evita pisar datos sin querer)
+  const existing = ufData.filter(u => u.periodo === opt.value);
+  const note = document.getElementById('uf-existing-note');
+  if (existing.length) {
+    note.style.display = 'block';
+    note.textContent = `⚠️ Ya hay ${existing.length} valor(es) cargados para este periodo. Si guardas, se reemplazarán.`;
+  } else {
+    note.style.display = 'none';
+  }
+
+  // Si ya hay un archivo parseado, re-valida sus fechas contra el nuevo periodo elegido
+  if (ufParsedData) renderUFPreview();
+}
+
+function handleUFDragOver(e)  { e.preventDefault(); document.getElementById('uf-import-zone').classList.add('drag-over'); }
+function handleUFDragLeave()  { document.getElementById('uf-import-zone').classList.remove('drag-over'); }
+function handleUFDrop(e) {
+  e.preventDefault(); handleUFDragLeave();
+  const f = e.dataTransfer.files[0];
+  if (f) processUFExcel(f);
+}
+function handleUFFileSelect(e) { const f = e.target.files[0]; if (f) processUFExcel(f); }
+
+async function processUFExcel(file) {
+  if (file.size > 10*1024*1024) { showUFError('Archivo supera 10MB.'); return; }
+  if (!ufSelectedPeriodo) { showUFError('Selecciona primero el periodo correspondiente.'); return; }
+
+  document.getElementById('uf-loading').classList.add('show');
+  document.getElementById('uf-error').classList.remove('show');
+  document.getElementById('uf-preview').classList.remove('show');
+  document.getElementById('uf-btn-save').style.display = 'none';
+
+  try {
+    await loadXLSXLib();
+    const buf  = await file.arrayBuffer();
+    const wb   = XLSX.read(buf, { type: 'array', cellDates: true });
+    const ws   = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+
+    // Extrae de cada fila una posible fecha y un posible valor de UF.
+    // Heurística para el valor: prioriza números con decimales (la UF casi
+    // siempre trae centavos), ya que un entero grande suele ser un número de
+    // serie de fecha de Excel mal interpretado, no un valor UF real.
+    const candidates = [];
+    for (const row of rows) {
+      if (!row || !row.length) continue;
+      let dateCell = null;
+      const valueCandidates = [];
+      for (const cell of row) {
+        if (cell == null) continue;
+        if (cell instanceof Date) { if (!dateCell) dateCell = cell; continue; }
+        if (typeof cell === 'number') {
+          if (cell > 1000) valueCandidates.push({ value: cell, hasDecimals: Math.abs(cell - Math.round(cell)) > 0.001 });
+          continue;
+        }
+        if (typeof cell === 'string') {
+          const s = cell.trim();
+          const dm = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+          if (dm && !dateCell) { dateCell = new Date(+dm[3], +dm[2]-1, +dm[1]); continue; }
+          const n = parseFloat(s.replace(/\./g,'').replace(',','.'));
+          if (!isNaN(n) && n > 1000) valueCandidates.push({ value: n, hasDecimals: Math.abs(n - Math.round(n)) > 0.001 });
+        }
+      }
+      if (!valueCandidates.length) continue;
+      const withDecimals = valueCandidates.filter(v => v.hasDecimals);
+      const chosen = withDecimals.length ? withDecimals[withDecimals.length-1] : valueCandidates[valueCandidates.length-1];
+      candidates.push({ dateCell, valueCell: chosen.value });
+    }
+
+    if (!candidates.length) {
+      showUFError('No se detectaron valores numéricos válidos en el archivo. Verifica que el Excel tenga una columna con los valores de la UF (montos mayores a 1.000).');
+      return;
+    }
+
+    // ¿La mayoría de filas trae una fecha explícita y reconocible?
+    const conFecha = candidates.filter(c => c.dateCell).length;
+    let result = [];
+    if (conFecha >= candidates.length * 0.7) {
+      result = candidates
+        .filter(c => c.dateCell)
+        .map(c => ({ fecha: dToISO(c.dateCell), valor: Math.round(c.valueCell*100)/100 }))
+        .sort((a,b) => a.fecha.localeCompare(b.fecha));
+    } else {
+      // Sin columna de fecha confiable: se asigna secuencialmente desde el día 9
+      // del periodo elegido (asumiendo que las filas del Excel ya vienen en orden cronológico)
+      result = candidates.map((c, idx) => {
+        const d = new Date(ufSelectedPeriodo.start);
+        d.setDate(d.getDate() + idx);
+        return { fecha: dToISO(d), valor: Math.round(c.valueCell*100)/100 };
+      });
+    }
+
+    // Quita fechas duplicadas (se queda con la última ocurrencia)
+    const map = new Map();
+    result.forEach(r => map.set(r.fecha, r.valor));
+    ufParsedData = [...map.entries()]
+      .map(([fecha,valor]) => ({ fecha, valor }))
+      .sort((a,b) => a.fecha.localeCompare(b.fecha));
+
+    renderUFPreview();
+  } catch (err) {
+    showUFError('Error leyendo Excel: ' + err.message);
+  } finally {
+    document.getElementById('uf-loading').classList.remove('show');
+  }
+}
+
+function renderUFPreview() {
+  if (!ufParsedData || !ufParsedData.length) return;
+  const opt = ufSelectedPeriodo;
+
+  // Validación cruzada: ¿las fechas detectadas caen dentro del periodo elegido?
+  const startStr = dToISO(opt.start), endStr = dToISO(opt.end);
+  const fueraDeRango = ufParsedData.filter(r => r.fecha < startStr || r.fecha > endStr).length;
+  const warnEl = document.getElementById('uf-range-warning');
+  if (fueraDeRango > 0) {
+    warnEl.style.display = 'block';
+    warnEl.textContent = `⚠️ ${fueraDeRango} de ${ufParsedData.length} fecha(s) detectadas NO caen dentro del periodo seleccionado (${dToShort(opt.start)} – ${dToShort(opt.end)}). Verifica que elegiste el mes correcto antes de guardar.`;
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  document.getElementById('uf-preview-title').textContent =
+    `✅ Se detectaron ${ufParsedData.length} valor(es) — revisa antes de guardar`;
+  document.getElementById('uf-preview-tbody').innerHTML = ufParsedData.map(r => `
+    <tr style="border-bottom:1px solid #DCFCE7">
+      <td style="padding:5px 10px">${fmt(r.fecha)}</td>
+      <td style="padding:5px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtUF(r.valor)}</td>
+    </tr>`).join('');
+
+  document.getElementById('uf-preview').classList.add('show');
+  document.getElementById('uf-btn-save').style.display = 'inline-flex';
+}
+
+function showUFError(msg) {
+  const el = document.getElementById('uf-error');
+  el.textContent = '⚠️ ' + msg; el.classList.add('show');
+  document.getElementById('uf-loading').classList.remove('show');
+}
+
+async function saveUFData() {
+  if (!ufParsedData || !ufParsedData.length || !ufSelectedPeriodo) return;
+  const periodo = ufSelectedPeriodo.value;
+  const btn = document.getElementById('uf-btn-save');
+  btn.disabled = true;
+  showLoadingOverlay(true);
+  try {
+    const ops = ufParsedData.map(r => {
+      // Si ya existe un registro para esa fecha (de este u otro periodo), se actualiza en vez de duplicar
+      const existing = ufData.find(u => u.fecha === r.fecha);
+      const item = existing ? { ...existing, valor: r.valor, periodo } : { fecha: r.fecha, valor: r.valor, periodo };
+      return saveUFToGraph(item).then(() => item);
+    });
+    const saved = await Promise.all(ops);
+    saved.forEach(item => {
+      const idx = ufData.findIndex(u => u.fecha === item.fecha);
+      if (idx >= 0) ufData[idx] = item; else ufData.push(item);
+    });
+    notify(`✅ Se guardaron ${saved.length} valor(es) UF para ${ufSelectedPeriodo.label}`, 'success');
+    closeModal('modal-uf');
+  } catch (e) {
+    notify('Error guardando valores UF: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    showLoadingOverlay(false);
+  }
 }
 
 // ══════════════════════════════
