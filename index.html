@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control OC & Facturas</title>
+<title>Control Proveedores</title>
 <script src="config.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -224,7 +224,7 @@ tbody td strong{color:var(--text);font-weight:600}
   <div class="sidebar-logo">
     <div class="logo-badge">
       <div class="logo-icon">📋</div>
-      <div><div>OC Control</div><div class="logo-sub">Compras & Facturas</div></div>
+      <div><div>Control Proveedores</div><div class="logo-sub">Compras & Facturas</div></div>
     </div>
   </div>
   <nav class="sidebar-nav">
@@ -232,13 +232,10 @@ tbody td strong{color:var(--text);font-weight:600}
     <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Dashboard</div>
     <div class="nav-sec">OC</div>
     <div class="nav-item" onclick="showPage('maestro-oc')"><span class="icon">🗂️</span>Maestro de OC</div>
-    <div class="nav-item" onclick="openImportModal()"><span class="icon">📂</span>Importar OC (PDF)</div>
     <div class="nav-sec">Facturas</div>
     <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro de Facturas</div>
-    <div class="nav-item" onclick="openImportFactModal()"><span class="icon">📥</span>Importar Factura (PDF)</div>
-    <div class="nav-item" onclick="openFactModal()"><span class="icon">➕</span>Nueva Factura manual</div>
   </nav>
-  <div class="sidebar-footer">v2.0 · Control OC & Facturas</div>
+  <div class="sidebar-footer">v2.0 · Control Proveedores</div>
 </aside>
 
 <main class="main">
@@ -632,7 +629,7 @@ tbody td strong{color:var(--text);font-weight:600}
 <div id="auth-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,27,45,.85);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:20px">
   <div style="background:#fff;border-radius:16px;padding:40px 48px;text-align:center;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="font-size:40px;margin-bottom:14px">📋</div>
-    <h2 style="font-size:20px;font-weight:700;color:#0F1B2D;margin-bottom:8px">Control OC & Facturas</h2>
+    <h2 style="font-size:20px;font-weight:700;color:#0F1B2D;margin-bottom:8px">Control Proveedores</h2>
     <p style="font-size:13px;color:#64748B;margin-bottom:24px">Inicia sesión con tu cuenta Microsoft para acceder al sistema compartido.</p>
     <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="signIn()">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" style="width:16px;height:16px"> &nbsp;Iniciar sesión con Microsoft
@@ -1128,12 +1125,13 @@ function refreshDashboard() {
         <div class="bar-val">${v}</div>
       </div>`).join('') || '<p style="color:var(--gray-400);font-size:12px">Sin datos</p>';
 
-  // Chart: OC por uso %
+  // Chart: OC por uso % (usa saldoOC() para respetar UF vs pesos — antes mezclaba
+  // unidades distintas cuando la OC era en UF, lo que disparaba el % a 100% falsamente)
   document.getElementById('chart-oc-uso').innerHTML =
     ocData.slice(0,6).map(oc => {
-      const usado = facturadoByOC(oc.noc);
-      const pct = oc.total > 0 ? Math.min(usado/oc.total*100,100) : 0;
-      const color = pct > 100 ? '#EF4444' : pct > 80 ? '#F59E0B' : '#10B981';
+      const s = saldoOC(oc);
+      const pct = s.pct;
+      const color = s.over ? '#EF4444' : pct > 80 ? '#F59E0B' : '#10B981';
       return `
         <div class="bar-row">
           <span style="font-size:11px;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${oc.noc}">${oc.noc}</span>
@@ -1155,9 +1153,7 @@ function renderMaestroOC() {
     const s = saldoOC(oc);
     const totalDisp  = oc.isUF ? `UF ${fmtUF(oc.total)}` : fmtCLP(oc.total);
     const usadoDisp  = oc.isUF ? `UF ${fmtUF(s.ufUsado)}` : fmtCLP(s.usado||0);
-    const saldoDisp  = oc.isUF
-      ? `UF ${fmtUF(s.ufSaldo)}<br><span style="font-size:10px;color:var(--gray-400)">${fmtCLP(s.pesosUsado)} en $</span>`
-      : fmtCLP(s.saldo||0);
+    const saldoDisp  = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo||0);
     const saldoColor = s.over ? 'var(--red)' : 'var(--green)';
     return `
       <tr>
@@ -1662,10 +1658,17 @@ function parseManagerOC(text) {
   // RUT proveedor: el último que aparece (viene después de "Rut :" en la sección del receptor)
   const provRut = allRuts.length > 1 ? allRuts[allRuts.length-1][1] : (allRuts[0]?.[1] || '');
 
-  // ── Proveedor: campo "Señor(es)" ──
+  // ── Proveedor: campo "Proveedor", "Señor" o "Señores" ──
   // El texto de pdf.js une todo en una línea, ej: "Señor(es) : AGUIRRE Y AGUIRRE ... Fecha Documento : ..."
-  // Capturamos todo entre "Señor(es) :" y el siguiente campo conocido
-  const provM = text.match(/Se[ñn]or(?:es)?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i);
+  // Capturamos todo entre la etiqueta y el siguiente campo conocido. Se prueban las 3 variantes,
+  // en orden, y se usa la primera que encuentre coincidencia.
+  const provPatterns = [
+    /Proveedor\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
+    /Se[ñn]ores\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
+    /Se[ñn]or(?:es)?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
+  ];
+  let provM = null;
+  for (const pat of provPatterns) { provM = text.match(pat); if (provM) break; }
   const proveedor = provM ? provM[1].trim().replace(/\s+/g,' ') : '';
 
   // ── Montos: buscar en sección "Facturación" ──
