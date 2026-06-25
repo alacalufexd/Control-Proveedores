@@ -481,17 +481,14 @@ tbody td strong{color:var(--text);font-weight:600}
       </div>
       <!-- Campo UF: solo visible si la OC seleccionada es en UF -->
       <div id="f-uf-row" style="display:none;margin-top:12px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs)">
-        <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — la factura está en pesos pero la OC se lleva en UF</div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;font-weight:600;color:#92400E;white-space:nowrap">Valor UF del día de emisión:</label>
-            <input type="number" id="f-valor-uf" placeholder="ej: 38500" step="0.01"
-              style="padding:7px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:140px;background:#FFFDE7;color:#78350F;outline:none"
-              oninput="updateSaldoPreview()"/>
-          </div>
-          <span id="f-uf-equiv" style="font-size:12px;color:#78350F;font-weight:600"></span>
+        <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — ingresa el monto en UF cobrado en esta factura</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;font-weight:600;color:#92400E;white-space:nowrap">Monto UF de la factura:</label>
+          <input type="number" id="f-valor-uf" placeholder="ej: 766" step="0.0001"
+            style="padding:7px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:140px;background:#FFFDE7;color:#78350F;outline:none"
+            oninput="updateSaldoPreview()"/>
         </div>
-        <div style="font-size:11px;color:#92400E;margin-top:6px">El sistema usará este valor para convertir $ → UF y calcular el saldo de la OC.</div>
+        <div style="font-size:11px;color:#92400E;margin-top:6px">Este monto se descuenta directamente del saldo UF de la OC — no afecta los montos en pesos de la factura (Neto / IVA / Total).</div>
       </div>
       <!-- Saldo OC preview -->
       <div id="f-saldo-preview" style="display:none;margin-top:14px">
@@ -557,13 +554,13 @@ tbody td strong{color:var(--text);font-weight:600}
         </div>
         <!-- Campo UF: visible si la OC seleccionada es en UF -->
         <div id="impf-uf-row" style="display:none;margin-top:12px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs)">
-          <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — ingresa el valor UF del día de emisión de esta factura</div>
+          <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — ingresa el monto en UF cobrado en esta factura</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <input type="number" id="impf-valor-uf" placeholder="ej: 38500" step="0.01"
+            <input type="number" id="impf-valor-uf" placeholder="ej: 766" step="0.0001"
               style="padding:7px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:150px;background:#FFFDE7;color:#78350F;outline:none"
               oninput="updateImpfSaldo()"/>
-            <span id="impf-uf-equiv" style="font-size:12px;color:#78350F;font-weight:600"></span>
           </div>
+          <div style="font-size:11px;color:#92400E;margin-top:6px">Este monto se descuenta directamente del saldo UF de la OC — no afecta los montos en pesos de la factura.</div>
         </div>
         <!-- Saldo OC preview -->
         <div id="impf-saldo-wrap" style="display:none;margin-top:12px">
@@ -1086,8 +1083,9 @@ function facturadoByOC(nocId) {
 }
 // Para OC en UF: convierte pesos de cada factura a UF usando valorUF guardado
 function facturadoByOCenUF(nocId) {
+  // valorUF ahora es el monto en UF cobrado directamente en la factura (no una tasa a convertir)
   return factData.filter(f => f.ocId === nocId).reduce((s,f) => {
-    if (f.valorUF && f.valorUF > 0) return s + (f.total / f.valorUF);
+    if (f.valorUF && f.valorUF > 0) return s + f.valorUF;
     return s;
   }, 0);
 }
@@ -1170,7 +1168,7 @@ function refreshDashboard() {
             <div class="bbar"><div class="bbar-fill ${cls}" style="width:${s.pct}%"></div></div>
             ${s.over ? `<div style="font-size:11px;color:var(--red);margin-top:3px">⚠️ Excedido en ${s.isUF?'UF '+fmtUF(s.ufUsado-s.ufTotal):fmtCLP(s.usado-oc.total)}</div>` : ''}
             ${s.isUF && factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length > 0
-              ? `<div style="font-size:11px;color:var(--gold);margin-top:3px">⚠️ ${factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length} factura(s) sin valor UF ingresado</div>` : ''}
+              ? `<div style="font-size:11px;color:var(--gold);margin-top:3px">⚠️ ${factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length} factura(s) sin monto UF ingresado</div>` : ''}
           </div>
           <div class="oc-saldo-right">
             <div class="oc-saldo-total">Saldo disponible</div>
@@ -1353,20 +1351,19 @@ function updateSaldoPreview() {
   document.getElementById('f-saldo-preview').style.display = 'block';
 
   if (oc.isUF) {
-    const valorUF = parseFloat(document.getElementById('f-valor-uf')?.value)||0;
-    const ufFact  = valorUF > 0 ? total / valorUF : 0;
+    const ufFact  = parseFloat(document.getElementById('f-valor-uf')?.value)||0;
     const ufUsado = facturadoByOCenUF(ocId);
     const ufNuevo = ufUsado + ufFact;
     const pct     = oc.total > 0 ? Math.min(ufNuevo/oc.total*100,100) : 0;
     const over    = ufNuevo > oc.total;
     const cls     = over ? 'over' : pct > 80 ? 'warn' : '';
     document.getElementById('f-saldo-label').textContent = `OC ${ocId} (UF) — Total: UF ${fmtUF(oc.total)}`;
-    document.getElementById('f-saldo-pct').textContent   = valorUF > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa valor UF para calcular';
+    document.getElementById('f-saldo-pct').textContent   = ufFact > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa el monto UF de la factura';
     document.getElementById('f-saldo-fill').style.width  = pct + '%';
     document.getElementById('f-saldo-fill').className    = `bbar-fill ${cls}`;
-    document.getElementById('f-saldo-sub').textContent   = valorUF > 0
+    document.getElementById('f-saldo-sub').textContent   = ufFact > 0
       ? (over ? `⚠️ Excede UF ${fmtUF(ufNuevo-oc.total)}` : `Saldo UF: ${fmtUF(oc.total-ufNuevo)} · Esta factura = UF ${fmtUF(ufFact)}`)
-      : 'Ingresa el valor UF del día de emisión para ver el saldo';
+      : 'Ingresa el monto UF cobrado en esta factura para ver el saldo';
   } else {
     const usado = facturadoByOC(ocId);
     const nuevo = usado + total;
@@ -1397,7 +1394,7 @@ function saveFact() {
 
   const oc = ocData.find(o => o.noc === ocId);
   const valorUF = oc?.isUF ? (parseFloat(document.getElementById('f-valor-uf')?.value)||0) : 0;
-  if (oc?.isUF && !valorUF) { notify('Debes ingresar el valor UF del día de emisión para OC en UF','error'); return; }
+  if (oc?.isUF && !valorUF) { notify('Debes ingresar el monto en UF cobrado en esta factura para OC en UF','error'); return; }
 
   const fact = {
     id: getNextFactNum(), num, ocId,
@@ -1414,8 +1411,7 @@ function saveFact() {
   const s = saldoOC({...oc});
   let over = false;
   if (oc.isUF && valorUF > 0) {
-    const ufFact = total / valorUF;
-    over = (s.ufUsado + ufFact) > oc.total;
+    over = (s.ufUsado + valorUF) > oc.total;
   } else if (!oc.isUF) {
     over = (facturadoByOC(ocId) + total) > oc.total;
   }
@@ -1602,7 +1598,7 @@ function openOCDetail(noc) {
       <div class="uf-row"><span class="ul">Facturado (en $)</span><span class="uv">${fmtCLP(s.pesosUsado)}</span></div>
       <div class="uf-row"><span class="ul">Facturado (en UF)</span><span class="uv">UF ${fmtUF(s.ufUsado)}</span></div>
       <div class="uf-row"><span class="ul">Saldo disponible</span><span class="uv" style="color:${s.over?'var(--red)':'var(--green)'}">UF ${fmtUF(s.ufSaldo)}</span></div>
-      ${factData.filter(f=>f.ocId===noc && !f.valorUF).length?`<div style="font-size:11px;color:var(--gold);margin-top:6px">⚠️ ${factData.filter(f=>f.ocId===noc && !f.valorUF).length} factura(s) sin valor UF — no incluidas en el cálculo UF</div>`:''}
+      ${factData.filter(f=>f.ocId===noc && !f.valorUF).length?`<div style="font-size:11px;color:var(--gold);margin-top:6px">⚠️ ${factData.filter(f=>f.ocId===noc && !f.valorUF).length} factura(s) sin monto UF — no incluidas en el cálculo UF</div>`:''}
     </div>` : `
     <div class="bbar-wrap">
       <div class="bbar-labels"><span>Facturado ${fmtCLP(s.usado||0)} / ${fmtCLP(oc.total)}</span><span>${s.pct.toFixed(1)}%</span></div>
@@ -1615,8 +1611,8 @@ function openOCDetail(noc) {
   document.getElementById('ocdet-facturas').innerHTML = facts.length
     ? facts.map(f => {
         const ufLine = oc.isUF && f.valorUF
-          ? `<span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 5px;border-radius:3px">UF ${fmtUF(f.total/f.valorUF)} · @${fmtCLP(f.valorUF)}</span>`
-          : oc.isUF ? `<span style="font-size:10px;color:var(--gold)">⚠️ Sin valor UF</span>` : '';
+          ? `<span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 5px;border-radius:3px">UF ${fmtUF(f.valorUF)}</span>`
+          : oc.isUF ? `<span style="font-size:10px;color:var(--gold)">⚠️ Sin monto UF</span>` : '';
         return `
           <div class="inv-card">
             <div class="ic-left">
@@ -2037,23 +2033,19 @@ function updateImpfSaldo() {
   document.getElementById('impf-saldo-wrap').style.display = 'block';
 
   if (oc.isUF) {
-    const valorUF = parseFloat(document.getElementById('impf-valor-uf')?.value)||0;
-    const ufFact  = valorUF > 0 ? total / valorUF : 0;
+    const ufFact  = parseFloat(document.getElementById('impf-valor-uf')?.value)||0;
     const ufUsado = facturadoByOCenUF(ocId);
     const ufNuevo = ufUsado + ufFact;
     const pct     = oc.total > 0 ? Math.min(ufNuevo/oc.total*100,100) : 0;
     const over    = ufNuevo > oc.total;
     const cls     = over ? 'over' : pct > 80 ? 'warn' : '';
-    // Show equiv
-    const eqEl = document.getElementById('impf-uf-equiv');
-    if (eqEl && valorUF > 0) eqEl.textContent = `= UF ${fmtUF(ufFact)}`;
     document.getElementById('impf-saldo-label').textContent  = `OC ${ocId} (UF) — Total: UF ${fmtUF(oc.total)}`;
-    document.getElementById('impf-saldo-pct').textContent    = valorUF > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa valor UF';
+    document.getElementById('impf-saldo-pct').textContent    = ufFact > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa el monto UF';
     document.getElementById('impf-saldo-fill').style.width   = pct + '%';
     document.getElementById('impf-saldo-fill').className     = `bbar-fill ${cls}`;
-    document.getElementById('impf-saldo-sub').textContent    = valorUF > 0
+    document.getElementById('impf-saldo-sub').textContent    = ufFact > 0
       ? (over ? `⚠️ Excede en UF ${fmtUF(ufNuevo-oc.total)}` : `Saldo: UF ${fmtUF(oc.total-ufNuevo)} · Esta factura = UF ${fmtUF(ufFact)}`)
-      : 'Ingresa el valor UF del día de emisión para ver el saldo';
+      : 'Ingresa el monto UF cobrado en la factura para ver el saldo';
   } else {
     const usado = facturadoByOC(ocId);
     const nuevo = usado + total;
@@ -2083,17 +2075,18 @@ function saveImportedFact() {
 
   const oc = ocData.find(o => o.noc === ocId);
 
-  // For UF OCs require valorUF
+  // Para OC en UF se requiere el monto UF cobrado en la factura
   let valorUF = 0;
   if (oc?.isUF) {
     const impfUFEl = document.getElementById('impf-valor-uf');
     valorUF = impfUFEl ? parseFloat(impfUFEl.value)||0 : 0;
-    if (!valorUF) { notify('Esta OC es en UF. Ingresa el valor UF del día de emisión.','error'); return; }
+    if (!valorUF) { notify('Esta OC es en UF. Ingresa el monto en UF cobrado en esta factura.','error'); return; }
   }
 
   const fact = {
     id: getNextFactNum(), num: d.numFact, ocId,
-    proveedor:   d.emisor || oc?.proveedor || '',
+    // El proveedor de la factura se toma SOLO de su propio PDF (d.emisor) — nunca de la OC asociada
+    proveedor:   d.emisor || '',
     rutProveedor:d.rutEmisor || '',
     receptor:    d.receptor || '',
     rutReceptor: d.rutReceptor || '',
@@ -2111,8 +2104,7 @@ function saveImportedFact() {
   // Budget alert
   let over = false;
   if (oc?.isUF && valorUF > 0) {
-    const ufFact = d.total / valorUF;
-    over = (facturadoByOCenUF(ocId) + ufFact) > oc.total;
+    over = (facturadoByOCenUF(ocId) + valorUF) > oc.total;
   } else if (oc && !oc.isUF) {
     over = (facturadoByOC(ocId) + d.total) > oc.total;
   }
@@ -2458,10 +2450,10 @@ function openEditFact(id) {
     { label:'Neto ($)',     key:'neto',         val:f.neto, type:'number' },
     { label:'IVA ($)',      key:'iva',          val:f.iva, type:'number' },
     { label:'Mail Aprov.',  key:'mailAprov',    val:f.mailAprov||'' },
-    ...(oc?.isUF ? [{ label:'Valor UF del día', key:'valorUF', val:f.valorUF||'', type:'number' }] : []),
+    ...(oc?.isUF ? [{ label:'Monto UF de la factura', key:'valorUF', val:f.valorUF||'', type:'number' }] : []),
   ];
   let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando Factura <strong>N°${f.num}</strong></div>`;
-  if (oc?.isUF) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El valor UF es requerido para el cálculo de saldo.</div>`;
+  if (oc?.isUF) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El monto UF de la factura es requerido para el cálculo de saldo.</div>`;
   html += '<div class="form-grid">';
   campos.forEach(c => {
     html += `<div class="form-group"><label>${c.label}</label>
