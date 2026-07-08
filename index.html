@@ -2542,8 +2542,9 @@ function openEditOC(noc) {
   let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando OC <strong>${noc}</strong></div>`;
   html += '<div class="form-grid">';
   campos.forEach(c => {
+    const safeVal = String(c.val ?? '').replace(/"/g, '&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     html += `<div class="form-group"><label>${c.label}</label>
-      <input type="${c.type||'text'}" id="edit-oc-${c.key}" value="${c.val}" style="width:100%"/></div>`;
+      <input type="${c.type||'text'}" id="edit-oc-${c.key}" value="${safeVal}" style="width:100%"/></div>`;
   });
   html += '</div>';
   showGenericModal('✏️ Editar OC', html, () => {
@@ -2573,8 +2574,11 @@ function openEditFact(id) {
   if (oc?.isUF) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El monto UF de la factura es requerido para el cálculo de saldo.</div>`;
   html += '<div class="form-grid">';
   campos.forEach(c => {
-    html += `<div class="form-group"><label>${c.label}</label>
-      <input type="${c.type||'text'}" id="edit-f-${c.key}" value="${c.val}" style="width:100%"/></div>`;
+    const safeVal = String(c.val ?? '').replace(/"/g, '&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const isProveedor = c.key === 'proveedor';
+    html += `<div class="form-group ${isProveedor ? 'form-full' : ''}">
+      <label>${c.label}${isProveedor ? ' <span style="font-size:10px;color:var(--accent);font-weight:600">— editable</span>' : ''}</label>
+      <input type="${c.type||'text'}" id="edit-f-${c.key}" value="${safeVal}" style="width:100%${isProveedor?';border-color:var(--accent)':''}"/></div>`;
   });
   html += '</div>';
   showGenericModal('✏️ Editar Factura', html, () => {
