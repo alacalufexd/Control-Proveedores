@@ -337,7 +337,7 @@ tbody td strong{color:var(--text);font-weight:600}
         <thead><tr>
           <th>N° OC Sistema</th><th>N° Manager</th><th>F. Documento</th>
           <th>Empresa</th><th>Proveedor</th><th>Subtotal</th><th>IVA</th>
-          <th>Total OC</th><th>Facturado</th><th>Saldo</th><th>Origen</th><th></th>
+          <th>Total OC</th><th>Facturado</th><th>Saldo</th><th>Ajuste TC</th><th>Origen</th><th></th>
         </tr></thead>
         <tbody id="maestro-oc-tbody"></tbody>
       </table>
@@ -455,7 +455,7 @@ tbody td strong{color:var(--text);font-weight:600}
         </div>
         <div class="form-group">
           <label>Proveedor</label>
-          <input type="text" id="f-prov" placeholder="Se completa al elegir OC" readonly/>
+          <input type="text" id="f-prov" placeholder="Razón social del proveedor"/>
         </div>
         <div class="form-group form-full">
           <label>Descripción / Glosa</label>
@@ -1253,6 +1253,7 @@ function renderMaestroOC() {
         <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${totalDisp}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple)">${usadoDisp}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${saldoColor}">${s.over?'⚠️ ':''} ${saldoDisp}</td>
+        <td>${oc.isUF ? `<button class="btn btn-gold btn-sm" onclick="openAjusteTC('${oc.noc}')" title="Ajuste por diferencia de tipo de cambio (±0,02 UF)">⚖️ Ajuste TC</button>` : ''}</td>
         <td><span style="font-size:9px;background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-weight:700">APROBADA</span>${oc.origenPDF?'<span style="font-size:9px;background:#EFF6FF;color:#1D4ED8;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">PDF</span>':''}${oc.isUF?'<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">UF</span>':''}</td>
         <td style="display:flex;gap:5px;flex-wrap:wrap">
           <button class="btn btn-secondary btn-sm" onclick="openOCDetail('${oc.noc}')">Ver</button>
@@ -1314,10 +1315,16 @@ function openFactModal(prefillOC) {
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-saldo-preview').style.display = 'none';
 
-  // Fill OC select
+  // Fill OC select — solo muestra OC con saldo disponible (saldo > 0)
   const sel = document.getElementById('f-oc');
   sel.innerHTML = '<option value="">— Selecciona una OC —</option>' +
-    ocData.map(oc => `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${fmtCLP(oc.total - facturadoByOC(oc.noc))}</option>`).join('');
+    ocData
+      .filter(oc => { const s = saldoOC(oc); return oc.isUF ? s.ufSaldo > 0 : (s.saldo||0) > 0; })
+      .map(oc => {
+        const s = saldoOC(oc);
+        const saldoStr = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo);
+        return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
+      }).join('');
   if (prefillOC) sel.value = prefillOC;
 
   sel.onchange = () => {
@@ -1392,13 +1399,21 @@ function saveFact() {
   if (!ocId)  { notify('Selecciona la OC asociada','error'); return; }
   if (!neto)  { notify('Ingresa el monto neto','error'); return; }
 
+  // Validación duplicado: misma combinación N° factura + proveedor
+  const provInput = document.getElementById('f-prov').value.trim();
+  const dupFact = factData.find(f => f.num === num && f.proveedor?.toLowerCase() === provInput.toLowerCase());
+  if (dupFact) {
+    notify(`⚠️ Ya existe la factura N°${num} del proveedor "${provInput}" (${dupFact.id}). Verifica antes de ingresar.`, 'error');
+    return;
+  }
+
   const oc = ocData.find(o => o.noc === ocId);
   const valorUF = oc?.isUF ? (parseFloat(document.getElementById('f-valor-uf')?.value)||0) : 0;
   if (oc?.isUF && !valorUF) { notify('Debes ingresar el monto en UF cobrado en esta factura para OC en UF','error'); return; }
 
   const fact = {
     id: getNextFactNum(), num, ocId,
-    proveedor:  oc?.proveedor || '',
+    proveedor:  document.getElementById('f-prov').value.trim() || oc?.proveedor || '',
     glosa:      document.getElementById('f-glosa').value.trim(),
     fechaIngreso: document.getElementById('f-fecha').value,
     neto, iva, total, valorUF,
@@ -1737,10 +1752,16 @@ function parseManagerOC(text) {
   const unidad = unidadM ? unidadM[1].trim() : '';
 
   // ── RUTs ──
-  const allRuts = [...text.matchAll(/(?:RUT|Rut)\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
-  const unidadRut = allRuts[0]?.[1] || '';
-  // RUT proveedor: el último que aparece (viene después de "Rut :" en la sección del receptor)
-  const provRut = allRuts.length > 1 ? allRuts[allRuts.length-1][1] : (allRuts[0]?.[1] || '');
+  // El "RUT de referencia" que aparece en la esquina superior derecha de los documentos
+  // Manager es un RUT sin etiqueta explícita — está solo en el encabezado.
+  // Los RUTs con etiqueta "Rut :" son el de la empresa emisora y el del receptor.
+  const allRutsConEtiqueta = [...text.matchAll(/(?:RUT|Rut)\s*[:\-]\s*([\d\.]{7,12}-[\dkK])/gi)];
+  // RUT sin etiqueta: aparece solo (ej. "77.618.641-4") antes de cualquier "Rut :"
+  const rutRefM = text.match(/(?<![:\-]\s{0,4})([\d]{1,2}\.[\d]{3}\.[\d]{3}-[\dkK])/);
+  const rutRef  = rutRefM?.[1] || '';
+  const unidadRut = allRutsConEtiqueta[0]?.[1] || '';
+  // RUT proveedor: prioriza el RUT de referencia del encabezado; si no, el último con etiqueta
+  const provRut = rutRef || (allRutsConEtiqueta.length > 1 ? allRutsConEtiqueta[allRutsConEtiqueta.length-1][1] : (allRutsConEtiqueta[0]?.[1] || ''));
 
   // ── Proveedor: campo "Proveedor", "Señor" o "Señores" ──
   // El texto de pdf.js une todo en una línea, ej: "Señor(es) : AGUIRRE Y AGUIRRE ... Fecha Documento : ..."
@@ -1843,6 +1864,18 @@ function saveImportedOC() {
   const proveedor = document.getElementById('imp-proveedor').value.trim() || d.proveedor || '';
   const provRut   = document.getElementById('imp-prov-rut').value.trim()  || d.provRut   || '';
   const mail      = document.getElementById('imp-mail').value.trim();
+
+  // Validación duplicado OC: mismo N° Manager + proveedor
+  if (d.nocManager) {
+    const dupOC = ocData.find(o =>
+      o.nocManager === d.nocManager &&
+      o.proveedor?.toLowerCase() === proveedor.toLowerCase()
+    );
+    if (dupOC) {
+      notify(`⚠️ Ya existe la OC Manager N°${d.nocManager} del proveedor "${proveedor}" (${dupOC.noc}). Verifica antes de importar.`, 'error');
+      return;
+    }
+  }
   const oc = {
     noc, nocManager:d.nocManager||'', fecha:d.fecha||new Date().toISOString().split('T')[0],
     unidad, unidadRut:d.unidadRut||'', proveedor, provRut,
@@ -1871,10 +1904,16 @@ function openImportFactModal() {
   document.getElementById('imp-fact-extra').style.display = 'none';
   document.getElementById('impf-btn-save').style.display = 'none';
   document.getElementById('impf-saldo-wrap').style.display = 'none';
-  // Fill OC select
+  // Fill OC select — solo muestra OC con saldo disponible (saldo > 0)
   const sel = document.getElementById('impf-oc');
   sel.innerHTML = '<option value="">— Selecciona una OC —</option>' +
-    ocData.map(oc => `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${fmtCLP(oc.total - facturadoByOC(oc.noc))}</option>`).join('');
+    ocData
+      .filter(oc => { const s = saldoOC(oc); return oc.isUF ? s.ufSaldo > 0 : (s.saldo||0) > 0; })
+      .map(oc => {
+        const s = saldoOC(oc);
+        const saldoStr = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo);
+        return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
+      }).join('');
   sel.onchange = updateImpfSaldo;
   document.getElementById('modal-import-fact').classList.add('open');
 }
@@ -1952,9 +1991,14 @@ function parseFacturaPDF(text) {
                || text.match(/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,50}(?:SPA|LTDA|SA|SpA|EIRL))/i);
   const emisor = emisorM ? emisorM[1].trim() : '';
 
-  // ── RUT Emisor ──
+  // ── RUT Emisor y Receptor ──
+  // El RUT de referencia (esquina sup. derecha de la factura electrónica chilena)
+  // aparece sin etiqueta — es el primer número de RUT del documento.
+  const rutRefFactM = text.match(/(?<![:\-]\s{0,4})([\d]{1,2}\.[\d]{3}\.[\d]{3}-[\dkK])/);
+  const rutRefFact  = rutRefFactM?.[1] || '';
   const allRuts = [...text.matchAll(/R\.?U\.?T\.?\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
-  const rutEmisor    = allRuts[0]?.[1] || '';
+  // rutEmisor: prioriza el RUT de referencia del encabezado; si no, el primero con etiqueta
+  const rutEmisor = rutRefFact || allRuts[0]?.[1] || '';
 
   // ── Receptor (empresa a quien se factura) ──
   const receptor = first(/Se[ñn]or\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][^\n\r\$]{3,60?})(?:\s{2,}|R\.U\.T|$)/i);
@@ -2072,6 +2116,16 @@ function saveImportedFact() {
 
   if (!d.numFact) { notify('No se detectó N° de factura. Verifica el PDF.','error'); return; }
   if (!ocId)      { notify('Debes seleccionar la OC asociada','error'); return; }
+
+  // Validación duplicado: mismo N° de factura + emisor
+  const dupFact = factData.find(f =>
+    f.num === d.numFact &&
+    f.proveedor?.toLowerCase() === (d.emisor||'').toLowerCase()
+  );
+  if (dupFact) {
+    notify(`⚠️ Ya existe la factura N°${d.numFact} del proveedor "${d.emisor}" (${dupFact.id}). Verifica antes de ingresar.`, 'error');
+    return;
+  }
 
   const oc = ocData.find(o => o.noc === ocId);
 
@@ -2377,6 +2431,66 @@ async function saveUFData() {
     btn.disabled = false;
     showLoadingOverlay(false);
   }
+}
+
+// ══════════════════════════════
+// AJUSTE POR TC (Tipo de Cambio UF)
+// ══════════════════════════════
+// Si el saldo final de una OC en UF queda en ±0,02 UF del total (diferencia
+// habitual por redondeo de tipo de cambio), se puede ajustar el total de la
+// OC para cuadrar exactamente con lo facturado, cerrando la OC sin excedente ni saldo.
+
+function openAjusteTC(noc) {
+  const oc = ocData.find(o => o.noc === noc);
+  if (!oc || !oc.isUF) return;
+
+  const s          = saldoOC(oc);
+  const saldoAbs   = Math.abs(s.ufSaldo);
+  const LIMITE     = 0.02; // ±0,02 UF máximo permitido para ajuste TC
+
+  if (saldoAbs > LIMITE) {
+    notify(
+      `⚠️ El saldo de ${fmtUF(s.ufSaldo)} UF supera el límite de ±0,02 UF para Ajuste TC. ` +
+      `Solo se pueden ajustar diferencias menores de 0,02 UF por redondeo de tipo de cambio.`,
+      'error'
+    );
+    return;
+  }
+
+  const nuevoTotal = Math.round((oc.total - s.ufSaldo) * 10000) / 10000;
+  const direccion  = s.ufSaldo > 0
+    ? `reducir el total en UF ${fmtUF(s.ufSaldo)} (saldo a favor)`
+    : `aumentar el total en UF ${fmtUF(Math.abs(s.ufSaldo))} (leve excedente por TC)`;
+
+  const html = `
+    <div class="del-confirm" style="background:#FFFBEB;border-color:#FDE68A;color:#92400E">
+      ⚖️ Este ajuste modifica el <strong>Total UF de la OC</strong> para absorber la diferencia de redondeo por tipo de cambio.
+    </div>
+    <div class="form-grid">
+      <div class="d-field"><div class="dl">OC</div><div class="dv">${oc.noc}</div></div>
+      <div class="d-field"><div class="dl">Total actual</div><div class="dv" style="font-family:'JetBrains Mono',monospace">UF ${fmtUF(oc.total)}</div></div>
+      <div class="d-field"><div class="dl">Facturado total</div><div class="dv" style="font-family:'JetBrains Mono',monospace">UF ${fmtUF(s.ufUsado)}</div></div>
+      <div class="d-field"><div class="dl">Saldo actual</div><div class="dv" style="font-family:'JetBrains Mono',monospace;color:${s.over?'var(--red)':'var(--green)'}">UF ${fmtUF(s.ufSaldo)}</div></div>
+      <div class="d-field" style="grid-column:1/-1">
+        <div class="dl">Acción</div>
+        <div class="dv">Se va a <strong>${direccion}</strong> → nuevo total: <strong style="font-family:'JetBrains Mono',monospace">UF ${fmtUF(nuevoTotal)}</strong>, saldo = UF 0,00</div>
+      </div>
+    </div>`;
+
+  showGenericModal('⚖️ Ajuste por Tipo de Cambio (TC)', html, async () => {
+    oc.total = nuevoTotal;
+    // Ajusta también subtotal manteniendo la proporción iva/subtotal si aplica
+    if (oc.iva > 0 && oc.subtotal > 0) {
+      const ratio = oc.iva / (oc.subtotal + oc.iva);
+      oc.iva      = Math.round(nuevoTotal * ratio * 10000) / 10000;
+      oc.subtotal = Math.round((nuevoTotal - oc.iva) * 10000) / 10000;
+    } else {
+      oc.subtotal = nuevoTotal;
+    }
+    await saveOCToGraph(oc);
+    refreshDashboard(); renderMaestroOC();
+    notify(`✅ Ajuste TC aplicado a ${noc}: nuevo total UF ${fmtUF(nuevoTotal)}`, 'success');
+  });
 }
 
 // ══════════════════════════════
