@@ -74,7 +74,7 @@ body{font-family:'Inter',sans-serif;background:#EEF2F7;color:var(--text);min-hei
 .btn-sm{padding:5px 10px;font-size:12px}
 
 /* TABLE */
-.table-wrap{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.table-wrap{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow-x:auto;overflow-y:visible}
 table{width:100%;border-collapse:collapse}
 thead th{background:var(--gray-50);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
@@ -333,11 +333,11 @@ tbody td strong{color:var(--text);font-weight:600}
           <button class="btn btn-secondary btn-sm" onclick="openImportModal()">📂 Importar PDF Manager</button>
         </div>
       </div>
-      <table>
+      <table style="min-width:1100px">
         <thead><tr>
-          <th>N° OC Sistema</th><th>N° Manager</th><th>F. Documento</th>
-          <th>Empresa</th><th>Proveedor</th><th>Subtotal</th><th>IVA</th>
-          <th>Total OC</th><th>Facturado</th><th>Saldo</th><th>Ajuste TC</th><th>Origen</th><th></th>
+          <th style="min-width:110px">N° OC</th><th style="min-width:80px">Manager</th><th style="min-width:95px">F. Doc.</th>
+          <th style="min-width:120px">Empresa</th><th style="min-width:140px">Proveedor</th><th style="min-width:100px">Subtotal</th><th style="min-width:90px">IVA</th>
+          <th style="min-width:100px">Total OC</th><th style="min-width:100px">Facturado</th><th style="min-width:100px">Saldo</th><th style="min-width:90px">Ajuste TC</th><th style="min-width:110px">Origen</th><th style="min-width:120px"></th>
         </tr></thead>
         <tbody id="maestro-oc-tbody"></tbody>
       </table>
@@ -454,8 +454,8 @@ tbody td strong{color:var(--text);font-weight:600}
           </select>
         </div>
         <div class="form-group">
-          <label>Proveedor</label>
-          <input type="text" id="f-prov" placeholder="Razón social del proveedor"/>
+          <label>Proveedor <span style="font-size:10px;color:var(--gray-400);font-weight:400">(edita si es necesario)</span></label>
+          <input type="text" id="f-prov" placeholder="Razón social del emisor de la factura"/>
         </div>
         <div class="form-group form-full">
           <label>Descripción / Glosa</label>
@@ -1253,9 +1253,9 @@ function renderMaestroOC() {
         <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${totalDisp}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple)">${usadoDisp}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${saldoColor}">${s.over?'⚠️ ':''} ${saldoDisp}</td>
-        <td>${oc.isUF ? `<button class="btn btn-gold btn-sm" onclick="openAjusteTC('${oc.noc}')" title="Ajuste por diferencia de tipo de cambio (±0,02 UF)">⚖️ Ajuste TC</button>` : ''}</td>
+        <td>${oc.isUF ? `<button class="btn btn-gold btn-sm" style="font-size:11px;padding:4px 8px" onclick="openAjusteTC('${oc.noc}')" title="Ajuste por diferencia de tipo de cambio (±0,02 UF)">⚖️ TC</button>` : ''}</td>
         <td><span style="font-size:9px;background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-weight:700">APROBADA</span>${oc.origenPDF?'<span style="font-size:9px;background:#EFF6FF;color:#1D4ED8;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">PDF</span>':''}${oc.isUF?'<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">UF</span>':''}</td>
-        <td style="display:flex;gap:5px;flex-wrap:wrap">
+        <td style="white-space:nowrap">
           <button class="btn btn-secondary btn-sm" onclick="openOCDetail('${oc.noc}')">Ver</button>
           <button class="btn btn-secondary btn-sm" onclick="openEditOC('${oc.noc}')" title="Editar">✏️</button>
           <button class="btn btn-danger btn-sm" onclick="deleteOC('${oc.noc}')" title="Eliminar">🗑️</button>
@@ -1308,12 +1308,14 @@ function clearFactSearch() {
 // MODAL FACTURA
 // ══════════════════════════════
 function openFactModal(prefillOC) {
-  // Reset
-  ['f-num','f-glosa','f-neto','f-iva','f-total','f-mail-aprov'].forEach(id => {
+  // Reset — incluye f-prov para que siempre parta vacío
+  ['f-num','f-glosa','f-neto','f-iva','f-total','f-mail-aprov','f-prov'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-saldo-preview').style.display = 'none';
+  const ufRow = document.getElementById('f-uf-row');
+  if (ufRow) ufRow.style.display = 'none';
 
   // Fill OC select — solo muestra OC con saldo disponible (saldo > 0)
   const sel = document.getElementById('f-oc');
@@ -1330,9 +1332,10 @@ function openFactModal(prefillOC) {
   sel.onchange = () => {
     const oc = ocData.find(o => o.noc === sel.value);
     if (oc) {
-      document.getElementById('f-prov').value = oc.proveedor||'';
+      // Pre-rellena el proveedor SOLO si el campo está vacío — no pisa lo que el usuario escribió
+      const provEl = document.getElementById('f-prov');
+      if (!provEl.value.trim()) provEl.value = oc.proveedor || '';
       // Show/hide UF field
-      const ufRow = document.getElementById('f-uf-row');
       if (ufRow) ufRow.style.display = oc.isUF ? 'flex' : 'none';
       updateSaldoPreview();
     }
