@@ -238,7 +238,7 @@ tbody td strong{color:var(--text);font-weight:600}
     <div class="nav-sec">OC</div>
     <div class="nav-item" onclick="showPage('maestro-oc')"><span class="icon">🗂️</span>Maestro de OC</div>
     <div class="nav-sec">Facturas</div>
-    <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro de Facturas</div>
+    <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro Facturas / Boletas</div>
   </nav>
   <div class="sidebar-footer">
     <button class="footer-uf-btn" onclick="openUFModal()">📅 Cargar UF mensual</button>
@@ -253,6 +253,8 @@ tbody td strong{color:var(--text);font-weight:600}
       <div id="auth-bar"></div>
       <button class="btn btn-secondary" onclick="openImportModal()">📂 Importar OC</button>
       <button class="btn btn-secondary" onclick="openImportFactModal()">📥 Importar Factura</button>
+      <button class="btn btn-secondary" onclick="openImportBoletaModal()">📋 Importar Boleta</button>
+      <button class="btn btn-secondary" onclick="openNuevaOCModal()">➕ Nueva OC</button>
       <button class="btn btn-primary" onclick="openFactModal()">🧾 Nueva Factura</button>
     </div>
   </div>
@@ -365,7 +367,7 @@ tbody td strong{color:var(--text);font-weight:600}
     </div>
     <div class="table-wrap">
       <div class="card-header" style="background:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
-        <h3 style="font-size:14px;font-weight:600;color:var(--navy)">Maestro de Facturas</h3>
+        <h3 style="font-size:14px;font-weight:600;color:var(--navy)">Maestro Facturas / Boletas</h3>
         <button class="btn btn-primary btn-sm" onclick="openFactModal()">➕ Nueva Factura</button>
       </div>
       <table>
@@ -537,6 +539,10 @@ tbody td strong{color:var(--text);font-weight:600}
       <div id="imp-fact-extra" style="display:none;margin-top:16px">
         <div class="sec-div" style="margin-bottom:12px">Completar datos</div>
         <div class="form-grid">
+          <div class="form-group form-full">
+            <label>Emisor / Proveedor <span style="font-size:10px;color:var(--accent);font-weight:600">— edita si el nombre detectado no es correcto</span></label>
+            <input type="text" id="impf-proveedor" placeholder="Razón social del proveedor" style="border-color:var(--accent)"/>
+          </div>
           <div class="form-group">
             <label>OC Asociada *</label>
             <select id="impf-oc">
@@ -675,6 +681,104 @@ tbody td strong{color:var(--text);font-weight:600}
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-oc-detail')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: IMPORTAR BOLETA DE HONORARIOS ═══ -->
+<div class="modal-overlay" id="modal-import-boleta">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📋 Importar Boleta de Honorarios</h2>
+      <button class="modal-close" onclick="closeModal('modal-import-boleta')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info" style="margin-bottom:16px;font-size:12px">
+        Sube el PDF de la boleta de honorarios electrónica. Se extraerán N° boleta, profesional, RUT, monto bruto, retención y líquido. Luego debes asociarla a una OC.
+      </div>
+      <div class="import-zone" id="import-boleta-zone"
+        ondragover="handleBoletaDragOver(event)" ondragleave="handleBoletaDragLeave()" ondrop="handleBoletaDrop(event)">
+        <input type="file" accept=".pdf" onchange="handleBoletaFileSelect(event)" id="pdf-boleta-input"/>
+        <div class="zi">📋</div>
+        <div class="zt">Arrastra el PDF de la boleta o haz clic para seleccionar</div>
+        <div class="zs">Boleta de Honorarios Electrónica en PDF · Máx 10MB</div>
+      </div>
+      <div class="imp-loading" id="imp-boleta-loading"><div class="spinner"></div><span>Leyendo boleta…</span></div>
+      <div class="imp-error" id="imp-boleta-error"></div>
+      <div class="imp-preview" id="imp-boleta-preview">
+        <h4>✅ Datos extraídos — revisa antes de guardar</h4>
+        <div class="prev-grid" id="prev-boleta-grid"></div>
+      </div>
+      <div id="imp-boleta-extra" style="display:none;margin-top:16px">
+        <div class="sec-div" style="margin-bottom:12px">Completar datos</div>
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label>Profesional / Emisor <span style="font-size:10px;color:var(--accent);font-weight:600">— edita si es necesario</span></label>
+            <input type="text" id="impb-proveedor" placeholder="Nombre del profesional" style="border-color:var(--accent)"/>
+          </div>
+          <div class="form-group">
+            <label>OC Asociada *</label>
+            <select id="impb-oc"><option value="">— Selecciona una OC —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Mail responsable aprobación</label>
+            <input type="email" id="impb-mail" placeholder="gerencia@empresa.cl"/>
+          </div>
+          <div class="form-group form-full">
+            <label>Descripción / Glosa (editable)</label>
+            <input type="text" id="impb-glosa" placeholder="Descripción del servicio"/>
+          </div>
+        </div>
+        <div id="impb-saldo-wrap" style="display:none;margin-top:12px">
+          <div class="bbar-wrap">
+            <div class="bbar-labels"><span id="impb-saldo-label"></span><span id="impb-saldo-pct"></span></div>
+            <div class="bbar"><div class="bbar-fill" id="impb-saldo-fill" style="width:0%"></div></div>
+            <div class="bbar-sub" id="impb-saldo-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-import-boleta')">Cancelar</button>
+      <button class="btn btn-primary" id="impb-btn-save" style="display:none" onclick="saveImportedBoleta()">💾 Ingresar Boleta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: NUEVA OC MANUAL ═══ -->
+<div class="modal-overlay" id="modal-nueva-oc">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>➕ Nueva Orden de Compra / Contrato</h2>
+      <button class="modal-close" onclick="closeModal('modal-nueva-oc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-info" style="margin-bottom:16px;font-size:12px">
+        Ingresa manualmente los datos de la OC o contrato. El N° de sistema se genera automáticamente.
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>N° Manager / Contrato</label><input type="text" id="noc-manager" placeholder="Ej: 81, CTR-2026-001"/></div>
+        <div class="form-group"><label>Fecha documento</label><input type="date" id="noc-fecha"/></div>
+        <div class="form-group"><label>Empresa (Unidad de negocio) *</label><input type="text" id="noc-unidad" placeholder="Ej: MDA Gestión SpA"/></div>
+        <div class="form-group"><label>RUT Empresa</label><input type="text" id="noc-unidad-rut" placeholder="Ej: 76.754.384-0"/></div>
+        <div class="form-group"><label>Proveedor / Prestador *</label><input type="text" id="noc-proveedor" placeholder="Razón social"/></div>
+        <div class="form-group"><label>RUT Proveedor</label><input type="text" id="noc-prov-rut" placeholder="Ej: 12.345.678-9"/></div>
+        <div class="sec-div">Montos</div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;grid-column:1/-1">
+          <label style="margin:0">Moneda:</label>
+          <label style="margin:0;font-weight:400"><input type="radio" name="noc-moneda" value="pesos" checked onchange="toggleNocMoneda()"> Pesos ($)</label>
+          <label style="margin:0;font-weight:400"><input type="radio" name="noc-moneda" value="uf" onchange="toggleNocMoneda()"> UF</label>
+        </div>
+        <div class="form-group"><label id="noc-sub-label">Subtotal (Neto)</label><input type="number" id="noc-subtotal" placeholder="0" oninput="calcNocTotals()"/></div>
+        <div class="form-group"><label id="noc-iva-label">IVA</label><input type="number" id="noc-iva" placeholder="0" oninput="calcNocTotals()"/></div>
+        <div class="form-group"><label id="noc-total-label">Total OC</label><input type="number" id="noc-total" placeholder="0" readonly/></div>
+        <div class="form-group form-full"><label>Descripción / Observaciones</label><textarea id="noc-obs" rows="2" placeholder="Descripción del contrato o servicio" style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-family:inherit;font-size:13.5px;resize:vertical"></textarea></div>
+        <div class="form-group"><label>Mail responsable compras</label><input type="email" id="noc-mail" placeholder="compras@empresa.cl"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-nueva-oc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNuevaOC()">💾 Crear OC</button>
     </div>
   </div>
 </div>
@@ -1111,7 +1215,7 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const map = { dashboard:'Dashboard', 'maestro-oc':'Maestro de OC', 'maestro-fact':'Maestro de Facturas' };
+  const map = { dashboard:'Dashboard', 'maestro-oc':'Maestro de OC', 'maestro-fact':'Maestro Facturas / Boletas' };
   document.getElementById('page-title').textContent = map[id] || '';
   if (id === 'dashboard')     refreshDashboard();
   if (id === 'maestro-oc')    renderMaestroOC();
@@ -1907,16 +2011,10 @@ function openImportFactModal() {
   document.getElementById('imp-fact-extra').style.display = 'none';
   document.getElementById('impf-btn-save').style.display = 'none';
   document.getElementById('impf-saldo-wrap').style.display = 'none';
-  // Fill OC select — solo muestra OC con saldo disponible (saldo > 0)
+  document.getElementById('impf-proveedor').value = '';
+  // El selector de OC se llena DESPUÉS de parsear el PDF (filtrado por proveedor)
   const sel = document.getElementById('impf-oc');
-  sel.innerHTML = '<option value="">— Selecciona una OC —</option>' +
-    ocData
-      .filter(oc => { const s = saldoOC(oc); return oc.isUF ? s.ufSaldo > 0 : (s.saldo||0) > 0; })
-      .map(oc => {
-        const s = saldoOC(oc);
-        const saldoStr = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo);
-        return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
-      }).join('');
+  sel.innerHTML = '<option value="">— Selecciona una OC —</option>';
   sel.onchange = updateImpfSaldo;
   document.getElementById('modal-import-fact').classList.add('open');
 }
@@ -2062,9 +2160,49 @@ function showImpFactPreview(d) {
     `<div class="prev-field"><span class="pl">${l}:</span> <span>${v}</span></div>`).join('');
   document.getElementById('imp-fact-preview').classList.add('show');
   document.getElementById('imp-fact-extra').style.display = 'block';
-  // Pre-fill glosa
+  // Pre-fill campos editables
+  document.getElementById('impf-proveedor').value = d.emisor || '';
   document.getElementById('impf-glosa').value = d.glosa || '';
+  // Filtrar OC por proveedor: solo muestra OC cuyo proveedor/RUT coincide con el emisor de la factura
+  fillImpfOCSelect(d.rutEmisor || '', d.emisor || '');
   document.getElementById('impf-btn-save').style.display = 'inline-flex';
+}
+
+// Llena el selector de OC filtrando por proveedor/RUT del emisor detectado en la factura.
+// Primero intenta hacer match por RUT exacto; si no hay coincidencias, cae a mostrar TODAS
+// las OC con saldo (para no bloquear el flujo si el RUT no quedó en la OC).
+function fillImpfOCSelect(rutEmisor, nombreEmisor) {
+  const sel = document.getElementById('impf-oc');
+  const rutNorm = (r) => (r||'').replace(/[\.\-\s]/g,'').toLowerCase();
+  const ocConSaldo = ocData.filter(oc => {
+    const s = saldoOC(oc);
+    return oc.isUF ? s.ufSaldo > 0 : (s.saldo||0) > 0;
+  });
+  // Intenta match por RUT del proveedor en la OC
+  const rutBusq = rutNorm(rutEmisor);
+  let ocFiltradas = rutBusq
+    ? ocConSaldo.filter(oc => rutNorm(oc.provRut) === rutBusq)
+    : [];
+  // Si no hay match por RUT, intenta match parcial por nombre (últimas 3+ palabras)
+  if (!ocFiltradas.length && nombreEmisor) {
+    const palabras = nombreEmisor.toLowerCase().split(/\s+/).filter(p => p.length > 2);
+    ocFiltradas = ocConSaldo.filter(oc =>
+      palabras.some(p => (oc.proveedor||'').toLowerCase().includes(p))
+    );
+  }
+  // Si aún no hay match, muestra todas con saldo (no bloquea el flujo)
+  const usandoTodas = !ocFiltradas.length;
+  if (usandoTodas) ocFiltradas = ocConSaldo;
+  sel.innerHTML = (usandoTodas
+    ? '<option value="" disabled style="color:var(--gold)">⚠️ No se encontraron OC de este proveedor — mostrando todas</option>'
+    : `<option value="">— OC de ${nombreEmisor||'este proveedor'} con saldo —</option>`) +
+    ocFiltradas.map(oc => {
+      const s = saldoOC(oc);
+      const saldoStr = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo);
+      return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
+    }).join('');
+  if (usandoTodas) sel.selectedIndex = 0;
+  sel.onchange = updateImpfSaldo;
 }
 
 function updateImpfSaldo() {
@@ -2116,6 +2254,8 @@ function saveImportedFact() {
   const ocId  = document.getElementById('impf-oc').value;
   const mail  = document.getElementById('impf-mail').value.trim();
   const glosa = document.getElementById('impf-glosa').value.trim();
+  // Proveedor editable: el usuario puede corregir el nombre detectado por el parser
+  const proveedorFinal = document.getElementById('impf-proveedor').value.trim() || d.emisor || '';
 
   if (!d.numFact) { notify('No se detectó N° de factura. Verifica el PDF.','error'); return; }
   if (!ocId)      { notify('Debes seleccionar la OC asociada','error'); return; }
@@ -2143,7 +2283,7 @@ function saveImportedFact() {
   const fact = {
     id: getNextFactNum(), num: d.numFact, ocId,
     // El proveedor de la factura se toma SOLO de su propio PDF (d.emisor) — nunca de la OC asociada
-    proveedor:   d.emisor || '',
+    proveedor:   proveedorFinal,
     rutProveedor:d.rutEmisor || '',
     receptor:    d.receptor || '',
     rutReceptor: d.rutReceptor || '',
@@ -2494,6 +2634,265 @@ function openAjusteTC(noc) {
     refreshDashboard(); renderMaestroOC();
     notify(`✅ Ajuste TC aplicado a ${noc}: nuevo total UF ${fmtUF(nuevoTotal)}`, 'success');
   });
+}
+
+// ══════════════════════════════
+// IMPORTAR BOLETA DE HONORARIOS
+// ══════════════════════════════
+let importedBoletaData = null;
+
+function openImportBoletaModal() {
+  importedBoletaData = null;
+  const fi = document.getElementById('pdf-boleta-input'); if(fi) fi.value='';
+  ['imp-boleta-loading','imp-boleta-error','imp-boleta-preview'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('imp-boleta-extra').style.display = 'none';
+  document.getElementById('impb-btn-save').style.display = 'none';
+  document.getElementById('impb-saldo-wrap').style.display = 'none';
+  document.getElementById('impb-proveedor').value = '';
+  document.getElementById('impb-oc').innerHTML = '<option value="">— Selecciona una OC —</option>';
+  document.getElementById('modal-import-boleta').classList.add('open');
+}
+
+function handleBoletaDragOver(e)  { e.preventDefault(); document.getElementById('import-boleta-zone').classList.add('drag-over'); }
+function handleBoletaDragLeave()  { document.getElementById('import-boleta-zone').classList.remove('drag-over'); }
+function handleBoletaDrop(e) {
+  e.preventDefault(); handleBoletaDragLeave();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type==='application/pdf') processBoletaPDF(f);
+  else { const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Solo se aceptan archivos PDF.'; el.classList.add('show'); }
+}
+function handleBoletaFileSelect(e) { const f = e.target.files[0]; if(f) processBoletaPDF(f); }
+
+async function processBoletaPDF(file) {
+  if (file.size > 10*1024*1024) {
+    const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Archivo supera 10MB.'; el.classList.add('show'); return;
+  }
+  document.getElementById('imp-boleta-loading').classList.add('show');
+  document.getElementById('imp-boleta-error').classList.remove('show');
+  document.getElementById('imp-boleta-preview').classList.remove('show');
+  try {
+    await loadPdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = '';
+    for (let p=1; p<=pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(i=>i.str).join(' ') + '\n';
+    }
+    console.log('[BOLETA PDF]', text);
+    importedBoletaData = parseBoletaPDF(text);
+    showImportBoletaPreview(importedBoletaData);
+  } catch(err) {
+    const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Error leyendo PDF: '+err.message; el.classList.add('show');
+  } finally {
+    document.getElementById('imp-boleta-loading').classList.remove('show');
+  }
+}
+
+// Parser Boleta de Honorarios Electrónica chilena (SII)
+// Campos esperados: N° boleta, RUT emisor, nombre profesional, RUT receptor, monto bruto, retención, líquido
+function parseBoletaPDF(text) {
+  const first = re => { const m=text.match(re); return m ? m[1].trim() : ''; };
+  function parseMonto(s) {
+    if (!s) return 0;
+    let c = s.replace(/\$/g,'').replace(/\s/g,'');
+    if (c.includes(',')) c = c.replace(/\./g,'').replace(',','.');
+    else c = c.replace(/\./g,'');
+    return Math.round(parseFloat(c))||0;
+  }
+
+  // N° Boleta
+  const numBoleta = first(/Boleta\s+(?:de\s+)?Honorarios\s+Electr[oó]nica\s+N[°o]?\s*[:\.]?\s*(\d+)/i)
+                 || first(/N[°o]\s*\.?\s*(\d+)/i);
+
+  // Fecha emisión
+  const mesesES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  let fechaEmision = '';
+  const fdLarga = text.match(/(\d{1,2})\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4})/i);
+  if (fdLarga) {
+    fechaEmision = `${fdLarga[3]}-${String(mesesES[fdLarga[2].toLowerCase()]).padStart(2,'0')}-${fdLarga[1].padStart(2,'0')}`;
+  } else {
+    const fd = first(/(\d{2}\/\d{2}\/\d{4})/);
+    if (fd) { const p=fd.split(/\//); fechaEmision=`${p[2]}-${p[1]}-${p[0]}`; }
+  }
+
+  // RUT emisor (el primero sin etiqueta — esquina sup. derecha o encabezado)
+  const rutRefM = text.match(/(?<![:\-]\s{0,4})([\d]{1,2}\.[\d]{3}\.[\d]{3}-[\dkK])/);
+  const rutEmisor = rutRefM?.[1] || '';
+
+  // Nombre del profesional: línea en mayúsculas/mixtas antes del RUT o "Boleta de Honorarios"
+  const profesionalM = text.match(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]{5,60})\s*(?:R\.?U\.?T|Boleta)/im)
+                    || text.match(/Nombre\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{5,60})/i);
+  const profesional = profesionalM ? profesionalM[1].trim().replace(/\s+/g,' ') : '';
+
+  // Receptor
+  const receptorM = text.match(/(?:Se[ñn]or(?:es)?|Receptor|Pagador)\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,60?})(?:\s{2,}|R\.?U\.?T|$)/i);
+  const receptor = receptorM ? receptorM[1].trim().replace(/\s+/g,' ') : '';
+  const allRuts = [...text.matchAll(/R\.?U\.?T\.?\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
+  const rutReceptor = allRuts[1]?.[1] || '';
+
+  // Montos: Honorario Bruto, Retención (10%), Líquido
+  const brutoStr   = first(/Honorario\s+Bruto\s*[:\$]?\s*([\d\.\,]+)/i)
+                  || first(/Monto\s+Bruto\s*[:\$]?\s*([\d\.\,]+)/i)
+                  || first(/Bruto\s*[:\$]\s*([\d\.\,]+)/i);
+  const retenStr   = first(/Retenci[oó]n\s*(?:\d+%\s*)?[:\$]?\s*([\d\.\,]+)/i)
+                  || first(/10%\s*[:\$]?\s*([\d\.\,]+)/i);
+  const liquidoStr = first(/(?:Honorario\s+)?L[íi]quido\s*[:\$]?\s*([\d\.\,]+)/i)
+                  || first(/Monto\s+L[íi]quido\s*[:\$]?\s*([\d\.\,]+)/i)
+                  || first(/Total\s*[:\$]?\s*([\d\.\,]+)/i);
+
+  const bruto   = parseMonto(brutoStr);
+  const reten   = parseMonto(retenStr);
+  const liquido = parseMonto(liquidoStr) || (bruto - reten);
+
+  return { numBoleta, fechaEmision, profesional, rutEmisor, receptor, rutReceptor, bruto, reten, liquido };
+}
+
+function showImportBoletaPreview(d) {
+  const fields = [
+    ['N° Boleta',      d.numBoleta    || '—'],
+    ['Fecha Emisión',  d.fechaEmision || '—'],
+    ['Profesional',    d.profesional  || '—'],
+    ['RUT Emisor',     d.rutEmisor    || '—'],
+    ['Receptor',       d.receptor     || '—'],
+    ['RUT Receptor',   d.rutReceptor  || '—'],
+    ['Honorario Bruto',fmtCLP(d.bruto)],
+    ['Retención (10%)',fmtCLP(d.reten)],
+    ['Líquido a pagar',fmtCLP(d.liquido)],
+  ];
+  document.getElementById('prev-boleta-grid').innerHTML = fields.map(([l,v]) =>
+    `<div class="prev-field"><span class="pl">${l}:</span> <span>${v}</span></div>`).join('');
+  document.getElementById('imp-boleta-preview').classList.add('show');
+  document.getElementById('imp-boleta-extra').style.display = 'block';
+  document.getElementById('impb-proveedor').value = d.profesional || '';
+  document.getElementById('impb-glosa').value = `Boleta honorarios N°${d.numBoleta||''}`;
+  // Selector OC filtrado por RUT del profesional
+  const rutNorm = (r) => (r||'').replace(/[\.\-\s]/g,'').toLowerCase();
+  const ocConSaldo = ocData.filter(oc => { const s=saldoOC(oc); return oc.isUF ? s.ufSaldo>0 : (s.saldo||0)>0; });
+  const rutB = rutNorm(d.rutEmisor);
+  let ocFilt = rutB ? ocConSaldo.filter(oc => rutNorm(oc.provRut)===rutB) : [];
+  if (!ocFilt.length) ocFilt = ocConSaldo;
+  const sel = document.getElementById('impb-oc');
+  sel.innerHTML = `<option value="">— OC de ${d.profesional||'este profesional'} —</option>` +
+    ocFilt.map(oc => {
+      const s=saldoOC(oc);
+      return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${oc.isUF?'UF '+fmtUF(s.ufSaldo):fmtCLP(s.saldo)}</option>`;
+    }).join('');
+  sel.onchange = () => {
+    const oc = ocData.find(o=>o.noc===sel.value);
+    if (!oc) { document.getElementById('impb-saldo-wrap').style.display='none'; return; }
+    const s=saldoOC(oc);
+    const usado=facturadoByOC(oc.noc), nuevo=usado+d.liquido;
+    const pct=oc.total>0?Math.min(nuevo/oc.total*100,100):0;
+    const over=nuevo>oc.total;
+    document.getElementById('impb-saldo-wrap').style.display='block';
+    document.getElementById('impb-saldo-label').textContent=`OC ${oc.noc} — Total: ${fmtCLP(oc.total)}`;
+    document.getElementById('impb-saldo-pct').textContent=`${pct.toFixed(1)}% utilizado`;
+    document.getElementById('impb-saldo-fill').style.width=pct+'%';
+    document.getElementById('impb-saldo-fill').className=`bbar-fill ${over?'over':pct>80?'warn':''}`;
+    document.getElementById('impb-saldo-sub').textContent=over?`⚠️ Excede en ${fmtCLP(nuevo-oc.total)}`:`Saldo tras esta boleta: ${fmtCLP(oc.total-nuevo)}`;
+  };
+  document.getElementById('impb-btn-save').style.display = 'inline-flex';
+}
+
+async function saveImportedBoleta() {
+  if (!importedBoletaData) return;
+  const d   = importedBoletaData;
+  const ocId = document.getElementById('impb-oc').value;
+  const mail = document.getElementById('impb-mail').value.trim();
+  const glosa= document.getElementById('impb-glosa').value.trim();
+  const proveedorFinal = document.getElementById('impb-proveedor').value.trim() || d.profesional || '';
+  if (!d.numBoleta) { notify('No se detectó N° de boleta. Verifica el PDF.','error'); return; }
+  if (!ocId)        { notify('Debes seleccionar la OC asociada.','error'); return; }
+  const dupFact = factData.find(f => f.num===d.numBoleta && f.proveedor?.toLowerCase()===proveedorFinal.toLowerCase());
+  if (dupFact) { notify(`⚠️ Ya existe la boleta N°${d.numBoleta} de "${proveedorFinal}" (${dupFact.id}).`,'error'); return; }
+  const fact = {
+    id: getNextFactNum(), num: d.numBoleta, ocId,
+    proveedor: proveedorFinal, rutProveedor: d.rutEmisor||'',
+    receptor: d.receptor||'', rutReceptor: d.rutReceptor||'',
+    glosa: glosa||'', fechaIngreso: d.fechaEmision||new Date().toISOString().split('T')[0],
+    fechaVenc:'', formaPago:'Honorarios',
+    neto: d.liquido, iva:0, total: d.liquido, valorUF:0,
+    mailAprov: mail, estado:'ingresada',
+    fechaAprobacion:null, aprobo:null, origenPDF:true,
+    createdAt: new Date().toISOString(),
+  };
+  factData.push(fact);
+  showLoadingOverlay(true);
+  saveFactToGraph(fact).then(() => {
+    closeModal('modal-import-boleta');
+    showPage('maestro-fact');
+    refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+    notify(`✅ Boleta N°${d.numBoleta} ingresada — ${fmtCLP(d.liquido)}`, 'success');
+  }).catch(()=>{}).finally(()=>showLoadingOverlay(false));
+}
+
+// ══════════════════════════════
+// NUEVA OC MANUAL
+// ══════════════════════════════
+function openNuevaOCModal() {
+  ['noc-manager','noc-unidad','noc-unidad-rut','noc-proveedor','noc-prov-rut','noc-obs','noc-mail','noc-subtotal','noc-iva','noc-total'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('noc-fecha').value = new Date().toISOString().split('T')[0];
+  document.querySelector('input[name="noc-moneda"][value="pesos"]').checked = true;
+  toggleNocMoneda();
+  document.getElementById('modal-nueva-oc').classList.add('open');
+}
+
+function toggleNocMoneda() {
+  const isUF = document.querySelector('input[name="noc-moneda"]:checked')?.value === 'uf';
+  document.getElementById('noc-sub-label').textContent   = isUF ? 'Subtotal (UF)' : 'Subtotal (Neto $)';
+  document.getElementById('noc-iva-label').textContent   = isUF ? 'IVA (UF)'      : 'IVA ($)';
+  document.getElementById('noc-total-label').textContent = isUF ? 'Total OC (UF)' : 'Total OC ($)';
+  calcNocTotals();
+}
+
+function calcNocTotals() {
+  const sub = parseFloat(document.getElementById('noc-subtotal').value)||0;
+  const iva = parseFloat(document.getElementById('noc-iva').value)||0;
+  document.getElementById('noc-total').value = Math.round((sub+iva)*10000)/10000;
+}
+
+async function saveNuevaOC() {
+  const unidad    = document.getElementById('noc-unidad').value.trim();
+  const proveedor = document.getElementById('noc-proveedor').value.trim();
+  if (!unidad)    { notify('Ingresa la empresa (unidad de negocio).','error'); return; }
+  if (!proveedor) { notify('Ingresa el proveedor o prestador.','error'); return; }
+  const isUF    = document.querySelector('input[name="noc-moneda"]:checked')?.value === 'uf';
+  const sub     = parseFloat(document.getElementById('noc-subtotal').value)||0;
+  const iva     = parseFloat(document.getElementById('noc-iva').value)||0;
+  const total   = sub + iva;
+  if (!total)   { notify('Ingresa el monto total de la OC.','error'); return; }
+  const nocManager = document.getElementById('noc-manager').value.trim();
+  // Validar duplicado
+  if (nocManager) {
+    const dup = ocData.find(o => o.nocManager===nocManager && o.proveedor?.toLowerCase()===proveedor.toLowerCase());
+    if (dup) { notify(`⚠️ Ya existe la OC Manager N°${nocManager} del proveedor "${proveedor}" (${dup.noc}).`,'error'); return; }
+  }
+  const oc = {
+    noc: getNextOCNum(), nocManager,
+    fecha:       document.getElementById('noc-fecha').value,
+    unidad,
+    unidadRut:   document.getElementById('noc-unidad-rut').value.trim(),
+    proveedor,
+    provRut:     document.getElementById('noc-prov-rut').value.trim(),
+    items: [{desc: document.getElementById('noc-obs').value.trim()||proveedor, qty:1, price:sub}],
+    subtotal: sub, iva, total, isUF,
+    estado:'aprobada', origenPDF:false,
+    observaciones: document.getElementById('noc-obs').value.trim(),
+    mailCompras:   document.getElementById('noc-mail').value.trim(),
+    createdAt: new Date().toISOString(),
+  };
+  ocData.push(oc);
+  showLoadingOverlay(true);
+  saveOCToGraph(oc).then(() => {
+    closeModal('modal-nueva-oc');
+    showPage('maestro-oc');
+    refreshDashboard(); renderMaestroOC();
+    notify(`✅ OC ${oc.noc} creada — ${proveedor} — ${isUF?'UF '+fmtUF(total):fmtCLP(total)}`,'success');
+  }).catch(()=>{}).finally(()=>showLoadingOverlay(false));
 }
 
 // ══════════════════════════════
