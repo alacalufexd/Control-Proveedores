@@ -234,12 +234,13 @@ tbody td strong{color:var(--text);font-weight:600}
   </div>
   <nav class="sidebar-nav">
     <div class="nav-sec">Principal</div>
-    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Dashboard</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span>Control Proveedores</div>
     <div class="nav-sec">OC</div>
     <div class="nav-item" onclick="showPage('maestro-oc')"><span class="icon">🗂️</span>Maestro de OC</div>
     <div class="nav-sec">Facturas</div>
     <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro Facturas / Boletas</div>
     <div class="nav-sec">Acciones</div>
+    <div class="nav-item" onclick="openFactModal()"><span class="icon">🧾</span>Nueva Factura</div>
     <div class="nav-item" onclick="openImportModal()"><span class="icon">📂</span>Importar OC</div>
     <div class="nav-item" onclick="openImportFactModal()"><span class="icon">📥</span>Importar Factura</div>
     <div class="nav-item" onclick="openImportBoletaModal()"><span class="icon">📋</span>Importar Boleta</div>
@@ -253,10 +254,9 @@ tbody td strong{color:var(--text);font-weight:600}
 
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-title" id="page-title">Control Proveedores</div>
     <div class="topbar-actions">
       <div id="auth-bar"></div>
-      <button class="btn btn-primary" onclick="openFactModal()">🧾 Nueva Factura</button>
     </div>
   </div>
 
@@ -1216,7 +1216,7 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const map = { dashboard:'Dashboard', 'maestro-oc':'Maestro de OC', 'maestro-fact':'Maestro Facturas / Boletas' };
+  const map = { dashboard:'Control Proveedores', 'maestro-oc':'Maestro de OC', 'maestro-fact':'Maestro Facturas / Boletas' };
   document.getElementById('page-title').textContent = map[id] || '';
   if (id === 'dashboard')     refreshDashboard();
   if (id === 'maestro-oc')    renderMaestroOC();
