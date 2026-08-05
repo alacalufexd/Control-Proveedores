@@ -1778,6 +1778,64 @@ async function loadPdfJs() {
   });
 }
 
+// ══════════════════════════════
+// OCR FALLBACK (Tesseract.js)
+// Para PDFs sin capa de texto real (escaneados, o con el texto
+// "dibujado" como imagen — pasa seguido en boletas de honorarios
+// que vienen de un escáner o de "imprimir a PDF" una copia impresa).
+// ══════════════════════════════
+let tesseractLib = null;
+async function loadTesseract() {
+  if (tesseractLib) return tesseractLib;
+  const cdns = [
+    'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js',
+    'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+    'https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js',
+  ];
+  for (const url of cdns) {
+    try {
+      await new Promise((resolve, reject) => {
+        if (window.Tesseract) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('cdn fail'));
+        document.head.appendChild(s);
+      });
+      if (window.Tesseract) { tesseractLib = window.Tesseract; return tesseractLib; }
+    } catch (e) { /* probar siguiente CDN */ }
+  }
+  throw new Error('No se pudo cargar el motor OCR (Tesseract.js) desde ningún CDN.');
+}
+
+// Extrae el texto de un PDF ya cargado con pdf.js. Si la capa de texto
+// viene vacía o casi vacía (PDF escaneado), renderiza cada página a
+// canvas y aplica OCR en español como respaldo.
+async function extractPdfText(pdf, onStatus) {
+  let text = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    text += content.items.map(i => i.str).join(' ') + '\n';
+  }
+  if (text.trim().length >= 40) return { text, ocr: false };
+
+  // Sin texto útil → OCR
+  if (onStatus) onStatus('🔎 PDF sin texto (escaneado) — aplicando OCR, puede tardar unos segundos…');
+  await loadTesseract();
+  let ocrText = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({ scale: 3 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    const { data } = await Tesseract.recognize(canvas, 'spa');
+    ocrText += data.text + '\n';
+  }
+  return { text: ocrText, ocr: true };
+}
+
 function openImportModal() {
   importedOCData = null;
   const fi = document.getElementById('pdf-file-input'); if(fi) fi.value='';
@@ -1910,7 +1968,7 @@ function parseManagerOC(text) {
   const descLarga = descLargaM ? descLargaM[1].trim().replace(/\s+/g,' ') : '';
 
   // Descripción corta (código de la tabla)
-  const descCortaM = text.match(/\d+\s+[\w\-]+\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{3,60?})\s+S\.?U\.?M/i);
+  const descCortaM = text.match(/\d+\s+[\w\-]+\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{3,60}?)\s+S\.?U\.?M/i);
   const descCorta  = descCortaM ? descCortaM[1].trim().replace(/\s+/g,' ') : '';
 
   // Usamos la descripción larga si existe, si no la corta
@@ -2103,7 +2161,7 @@ function parseFacturaPDF(text) {
   const rutEmisor = rutRefFact || allRuts[0]?.[1] || '';
 
   // ── Receptor (empresa a quien se factura) ──
-  const receptor = first(/Se[ñn]or\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][^\n\r\$]{3,60?})(?:\s{2,}|R\.U\.T|$)/i);
+  const receptor = first(/Se[ñn]or\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][^\n\r\$]{3,60}?)(?:\s{2,}|R\.U\.T|$)/i);
   const rutReceptor  = allRuts[1]?.[1] || '';
 
   // ── Montos ──
@@ -2668,26 +2726,25 @@ async function processBoletaPDF(file) {
   if (file.size > 10*1024*1024) {
     const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Archivo supera 10MB.'; el.classList.add('show'); return;
   }
-  document.getElementById('imp-boleta-loading').classList.add('show');
+  const loadingEl = document.getElementById('imp-boleta-loading');
+  const loadingSpan = loadingEl.querySelector('span');
+  loadingEl.classList.add('show');
   document.getElementById('imp-boleta-error').classList.remove('show');
   document.getElementById('imp-boleta-preview').classList.remove('show');
   try {
     await loadPdfJs();
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    let text = '';
-    for (let p=1; p<=pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      text += content.items.map(i=>i.str).join(' ') + '\n';
-    }
-    console.log('[BOLETA PDF]', text);
+    const { text, ocr } = await extractPdfText(pdf, msg => { if (loadingSpan) loadingSpan.textContent = msg; });
+    console.log('[BOLETA PDF]', ocr ? '(extraído vía OCR)' : '(texto nativo)', text);
     importedBoletaData = parseBoletaPDF(text);
     showImportBoletaPreview(importedBoletaData);
+    if (ocr) notify('⚠️ Esta boleta es un PDF escaneado (sin texto). Se usó OCR para leerla — revisa bien los datos antes de guardar.', 'warning');
   } catch(err) {
     const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Error leyendo PDF: '+err.message; el.classList.add('show');
   } finally {
-    document.getElementById('imp-boleta-loading').classList.remove('show');
+    loadingEl.classList.remove('show');
+    if (loadingSpan) loadingSpan.textContent = 'Leyendo boleta…';
   }
 }
 
@@ -2724,14 +2781,32 @@ function parseBoletaPDF(text) {
   const rutEmisor   = allRuts[0]?.[1] ? normRut(allRuts[0][1]) : '';
   const rutReceptor = allRuts[1]?.[1] ? normRut(allRuts[1][1]) : '';
 
-  // Nombre del profesional — primera línea de texto antes de "RUT" o "BOLETA"
-  const profesionalM = text.match(/^\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]{5,80?})\s+(?:RUT|R\.U\.T|BOLETA)/im)
-                    || text.match(/Nombre\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{5,60})/i);
-  const profesional = profesionalM ? profesionalM[1].trim().replace(/\s+/g,' ') : '';
+  // Nombre del profesional — regla real de las boletas SII: la primera fila
+  // es el nombre del emisor y la fila de abajo es su RUT. Por eso se busca
+  // el texto en MAYÚSCULAS ubicado justo antes del primer "RUT:" del
+  // documento, en vez de asumir que están en la misma línea (esto también
+  // resiste el desorden de lectura que produce el OCR en boletas escaneadas).
+  const stripBoilerplate = s => s
+    .replace(/\b(BOLETA|HONORARIOS?|ELECTR[OÓ]NICAS?|FACTURA|EXENTA|GIRO)\b/gi, '')
+    .replace(/\s{2,}/g, ' ').trim();
+  let profesional = '';
+  const rutMarkIdx = text.search(/R\.?U\.?T\.?\s*[:\-]?\s*[\d\.]{6,12}-\s*[\dkK]/i);
+  if (rutMarkIdx > -1) {
+    const before = text.slice(0, rutMarkIdx);
+    const nameRuns = [...before.matchAll(/[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\.]{1,}(?:[ \t]+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\.]{1,}){1,6}/g)]
+      .map(m => stripBoilerplate(m[0]))
+      .filter(s => s.length >= 4);
+    if (nameRuns.length) profesional = nameRuns[nameRuns.length - 1];
+  }
+  if (!profesional) {
+    const profesionalM = text.match(/^\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]{5,80}?)\s+(?:RUT|R\.U\.T|BOLETA)/im)
+                      || text.match(/Nombre\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{5,60})/i);
+    profesional = profesionalM ? profesionalM[1].trim().replace(/\s+/g,' ') : '';
+  }
 
   // Receptor — "Señor(es):", "Señores:"
-  const receptorM = text.match(/Se[ñn]or(?:es|s)?\s*(?:\(es\))?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,80?})(?=\s{2,}|Domicilio|Rut|R\.U\.T|$)/im)
-                 || text.match(/(?:Receptor|Pagador)\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,60?})(?:\s{2,}|$)/i);
+  const receptorM = text.match(/Se[ñn]or(?:es|s)?\s*(?:\(es\))?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,80}?)(?=\s{2,}|Domicilio|Rut|R\.U\.T|$)/im)
+                 || text.match(/(?:Receptor|Pagador)\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,60}?)(?:\s{2,}|$)/i);
   const receptor = receptorM ? receptorM[1].trim().replace(/\s+/g,' ') : '';
 
   // Montos — este PDF usa:
