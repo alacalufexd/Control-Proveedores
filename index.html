@@ -239,6 +239,11 @@ tbody td strong{color:var(--text);font-weight:600}
     <div class="nav-item" onclick="showPage('maestro-oc')"><span class="icon">🗂️</span>Maestro de OC</div>
     <div class="nav-sec">Facturas</div>
     <div class="nav-item" onclick="showPage('maestro-fact')"><span class="icon">🧾</span>Maestro Facturas / Boletas</div>
+    <div class="nav-sec">Acciones</div>
+    <div class="nav-item" onclick="openImportModal()"><span class="icon">📂</span>Importar OC</div>
+    <div class="nav-item" onclick="openImportFactModal()"><span class="icon">📥</span>Importar Factura</div>
+    <div class="nav-item" onclick="openImportBoletaModal()"><span class="icon">📋</span>Importar Boleta</div>
+    <div class="nav-item" onclick="openNuevaOCModal()"><span class="icon">➕</span>Nueva OC</div>
   </nav>
   <div class="sidebar-footer">
     <button class="footer-uf-btn" onclick="openUFModal()">📅 Cargar UF mensual</button>
@@ -251,10 +256,6 @@ tbody td strong{color:var(--text);font-weight:600}
     <div class="topbar-title" id="page-title">Dashboard</div>
     <div class="topbar-actions">
       <div id="auth-bar"></div>
-      <button class="btn btn-secondary" onclick="openImportModal()">📂 Importar OC</button>
-      <button class="btn btn-secondary" onclick="openImportFactModal()">📥 Importar Factura</button>
-      <button class="btn btn-secondary" onclick="openImportBoletaModal()">📋 Importar Boleta</button>
-      <button class="btn btn-secondary" onclick="openNuevaOCModal()">➕ Nueva OC</button>
       <button class="btn btn-primary" onclick="openFactModal()">🧾 Nueva Factura</button>
     </div>
   </div>
