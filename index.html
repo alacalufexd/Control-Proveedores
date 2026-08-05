@@ -2702,14 +2702,14 @@ function parseBoletaPDF(text) {
     return Math.round(parseFloat(c))||0;
   }
 
-  // N° Boleta
-  const numBoleta = first(/Boleta\s+(?:de\s+)?Honorarios\s+Electr[oó]nica\s+N[°o]?\s*[:\.]?\s*(\d+)/i)
-                 || first(/N[°o]\s*\.?\s*(\d+)/i);
+  // N° Boleta — acepta "N ° 24", "N°24", "N° 24", "Nº 24", con o sin espacio
+  const numBoleta = first(/Boleta[^<]{0,60}N\s*[°oº.]\s*°?\s*(\d+)/i)
+                 || first(/N\s*[°oº.]\s*°?\s*(\d+)/i);
 
-  // Fecha emisión
+  // Fecha emisión — acepta "25 de Junio de 2026" Y "25 Junio 2026"
   const mesesES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
   let fechaEmision = '';
-  const fdLarga = text.match(/(\d{1,2})\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(\d{4})/i);
+  const fdLarga = text.match(/(\d{1,2})\s+(?:de\s+)?(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de\s+)?(\d{4})/i);
   if (fdLarga) {
     fechaEmision = `${fdLarga[3]}-${String(mesesES[fdLarga[2].toLowerCase()]).padStart(2,'0')}-${fdLarga[1].padStart(2,'0')}`;
   } else {
@@ -2717,36 +2717,51 @@ function parseBoletaPDF(text) {
     if (fd) { const p=fd.split(/\//); fechaEmision=`${p[2]}-${p[1]}-${p[0]}`; }
   }
 
-  // RUT emisor (el primero sin etiqueta — esquina sup. derecha o encabezado)
-  const rutRefM = text.match(/(?<![:\-]\s{0,4})([\d]{1,2}\.[\d]{3}\.[\d]{3}-[\dkK])/);
-  const rutEmisor = rutRefM?.[1] || '';
+  // RUTs — acepta espacio tras el guión: "77.139.432- 9" → normaliza
+  const allRuts = [...text.matchAll(/R\.?U\.?T\.?\s*[:\-]?\s*([\d\.]{6,12}-\s*[\dkK])/gi)];
+  const normRut = s => s.replace(/\s/g,'');
+  const rutEmisor   = allRuts[0]?.[1] ? normRut(allRuts[0][1]) : '';
+  const rutReceptor = allRuts[1]?.[1] ? normRut(allRuts[1][1]) : '';
 
-  // Nombre del profesional: línea en mayúsculas/mixtas antes del RUT o "Boleta de Honorarios"
-  const profesionalM = text.match(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]{5,60})\s*(?:R\.?U\.?T|Boleta)/im)
+  // Nombre del profesional — primera línea de texto antes de "RUT" o "BOLETA"
+  const profesionalM = text.match(/^\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\.]{5,80?})\s+(?:RUT|R\.U\.T|BOLETA)/im)
                     || text.match(/Nombre\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{5,60})/i);
   const profesional = profesionalM ? profesionalM[1].trim().replace(/\s+/g,' ') : '';
 
-  // Receptor
-  const receptorM = text.match(/(?:Se[ñn]or(?:es)?|Receptor|Pagador)\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,60?})(?:\s{2,}|R\.?U\.?T|$)/i);
+  // Receptor — "Señor(es):", "Señores:"
+  const receptorM = text.match(/Se[ñn]or(?:es|s)?\s*(?:\(es\))?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,80?})(?=\s{2,}|Domicilio|Rut|R\.U\.T|$)/im)
+                 || text.match(/(?:Receptor|Pagador)\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][^\n\r]{4,60?})(?:\s{2,}|$)/i);
   const receptor = receptorM ? receptorM[1].trim().replace(/\s+/g,' ') : '';
-  const allRuts = [...text.matchAll(/R\.?U\.?T\.?\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
-  const rutReceptor = allRuts[1]?.[1] || '';
 
-  // Montos: Honorario Bruto, Retención (10%), Líquido
-  const brutoStr   = first(/Honorario\s+Bruto\s*[:\$]?\s*([\d\.\,]+)/i)
-                  || first(/Monto\s+Bruto\s*[:\$]?\s*([\d\.\,]+)/i)
-                  || first(/Bruto\s*[:\$]\s*([\d\.\,]+)/i);
-  const retenStr   = first(/Retenci[oó]n\s*(?:\d+%\s*)?[:\$]?\s*([\d\.\,]+)/i)
-                  || first(/10%\s*[:\$]?\s*([\d\.\,]+)/i);
-  const liquidoStr = first(/(?:Honorario\s+)?L[íi]quido\s*[:\$]?\s*([\d\.\,]+)/i)
-                  || first(/Monto\s+L[íi]quido\s*[:\$]?\s*([\d\.\,]+)/i)
-                  || first(/Total\s*[:\$]?\s*([\d\.\,]+)/i);
+  // Montos — este PDF usa:
+  //   "Total Honorarios: $" para el bruto
+  //   "15,25 % Impto. Retenido:" para la retención (porcentaje variable, no siempre 10%)
+  //   "Total:" (última ocurrencia) para el líquido
+  const brutoStr = first(/Total\s+Honorarios[\s:\$]+(\d[\d\.\,]+)/i)
+                || first(/Honorario\s+Bruto\s*[:\$]?\s*([\d\.\,]+)/i)
+                || first(/Monto\s+Bruto\s*[:\$]?\s*([\d\.\,]+)/i)
+                || first(/Bruto\s*[:\$]\s*([\d\.\,]+)/i);
+
+  const retenStr = first(/[\d]+[,\.]?\d*\s*%\s*Impto\.?\s*Retenido[\s:\$]*([\d\.\,]+)/i)
+                || first(/Impto\.?\s*Retenido[\s:\$]*([\d\.\,]+)/i)
+                || first(/Retenci[oó]n\s*(?:[\d,\.]+%\s*)?[:\$]?\s*([\d\.\,]+)/i);
+
+  // Líquido: el ÚLTIMO "Total:" del documento (excluyendo "Total Honorarios")
+  const allTotales = [...text.matchAll(/(?<![a-zA-Z])Total\s*:\s*([\d\.\,]+)/gi)];
+  const liquidoStr = allTotales.length
+    ? allTotales[allTotales.length - 1][1]
+    : (first(/(?:Honorario\s+)?L[íi]quido\s*[:\$]?\s*([\d\.\,]+)/i)
+    || first(/Monto\s+L[íi]quido\s*[:\$]?\s*([\d\.\,]+)/i));
 
   const bruto   = parseMonto(brutoStr);
   const reten   = parseMonto(retenStr);
   const liquido = parseMonto(liquidoStr) || (bruto - reten);
 
-  return { numBoleta, fechaEmision, profesional, rutEmisor, receptor, rutReceptor, bruto, reten, liquido };
+  // Porcentaje real de retención (puede ser 15,25% u otro)
+  const pctM = text.match(/(\d+[,.]\d+|\d+)\s*%\s*(?:Impto|Retenci)/i);
+  const pctReten = pctM ? pctM[1].replace(',','.') + '%' : '';
+
+  return { numBoleta, fechaEmision, profesional, rutEmisor, receptor, rutReceptor, bruto, reten, liquido, pctReten };
 }
 
 function showImportBoletaPreview(d) {
@@ -2758,7 +2773,7 @@ function showImportBoletaPreview(d) {
     ['Receptor',       d.receptor     || '—'],
     ['RUT Receptor',   d.rutReceptor  || '—'],
     ['Honorario Bruto',fmtCLP(d.bruto)],
-    ['Retención (10%)',fmtCLP(d.reten)],
+    [`Retención (${d.pctReten||'—'})`,fmtCLP(d.reten)],
     ['Líquido a pagar',fmtCLP(d.liquido)],
   ];
   document.getElementById('prev-boleta-grid').innerHTML = fields.map(([l,v]) =>
