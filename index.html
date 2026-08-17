@@ -2815,9 +2815,19 @@ function parseBoletaPDF(text) {
     return Math.round(parseFloat(c))||0;
   }
 
-  // N° Boleta — acepta "N ° 24", "N°24", "N° 24", "Nº 24", con o sin espacio
-  const numBoleta = first(/Boleta[^<]{0,60}N\s*[°oº.?]\s*[°?]?\s*(\d+)/i)
-                 || first(/N\s*[°oº.?]\s*[°?]?\s*(\d+)/i);
+  // Posición del primer "RUT:" del documento — el bloque con el N° de boleta
+  // SIEMPRE está antes de esta posición (esquina superior del documento), así
+  // que se usa como límite de búsqueda en vez de adivinar el símbolo exacto
+  // que el OCR puso donde debería ir "°" (puede salir "?", ".", vacío, etc.
+  // según el motor OCR — por eso no conviene depender del símbolo).
+  const rutMarkIdx = text.search(/R\.?U\.?T\.?\s*[:\-]?\s*[\d\.]{6,12}-\s*[\dkK]/i);
+  const zonaEncabezado = rutMarkIdx > -1 ? text.slice(0, rutMarkIdx) : text.slice(0, 200);
+
+  // N° Boleta — se busca "N" seguido de 0-3 caracteres que NO sean letras ni
+  // dígitos (el símbolo "°"/"º" o lo que el OCR haya puesto ahí) y luego el
+  // número, dentro del bloque de encabezado (antes del RUT).
+  const numBoletaMatches = [...zonaEncabezado.matchAll(/\bN[^A-Za-z0-9]{0,3}(\d{1,5})\b/g)];
+  const numBoleta = numBoletaMatches.length ? numBoletaMatches[numBoletaMatches.length - 1][1] : '';
 
   // Fecha emisión — acepta "25 de Junio de 2026" Y "25 Junio 2026"
   const mesesES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
@@ -2845,7 +2855,6 @@ function parseBoletaPDF(text) {
     .replace(/\b(BOLETA|HONORARIOS?|ELECTR[OÓ]NICAS?|FACTURA|EXENTA|GIRO)\b/gi, '')
     .replace(/\s{2,}/g, ' ').trim();
   let profesional = '';
-  const rutMarkIdx = text.search(/R\.?U\.?T\.?\s*[:\-]?\s*[\d\.]{6,12}-\s*[\dkK]/i);
   if (rutMarkIdx > -1) {
     const before = text.slice(0, rutMarkIdx);
     const nameRuns = [...before.matchAll(/[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\.]{1,}(?:[ \t]+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\.]{1,}){1,6}/g)]
