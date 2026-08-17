@@ -342,6 +342,20 @@ tbody td strong{color:var(--text);font-weight:600}
 
   <!-- ═══ MAESTRO OC ═══ -->
   <div class="page" id="page-maestro-oc">
+    <!-- Search -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body">
+        <div class="search-row">
+          <input class="search-input" id="oc-search" type="text" placeholder="Buscar por N° OC, Manager, proveedor, empresa…" oninput="renderMaestroOC()">
+          <select class="search-sel" id="oc-search-saldo" onchange="renderMaestroOC()">
+            <option value="">Todas</option>
+            <option value="con">Con saldo</option>
+            <option value="sin">Sin saldo</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="clearOCSearch()">✕</button>
+        </div>
+      </div>
+    </div>
     <div class="table-wrap">
       <div class="card-header" style="background:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
         <h3 style="font-size:14px;font-weight:600;color:var(--navy)">Maestro de Órdenes de Compra</h3>
@@ -437,6 +451,9 @@ tbody td strong{color:var(--text);font-weight:600}
         <div id="imp-uf-note" style="display:none;margin-top:10px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400E">
           ⚠️ Esta OC está expresada en <strong>UF</strong>. El monto mostrado es el valor numérico en UF. Puedes corregirlo manualmente al valor en pesos si lo necesitas.
         </div>
+        <div id="imp-usd-note" style="display:none;margin-top:10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;font-size:12px;color:#1D4ED8">
+          ⚠️ Esta OC está expresada en <strong>USD (US$)</strong>. El monto mostrado es el valor numérico en dólares. Puedes corregirlo manualmente si lo necesitas.
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -505,6 +522,17 @@ tbody td strong{color:var(--text);font-weight:600}
             oninput="updateSaldoPreview()"/>
         </div>
         <div style="font-size:11px;color:#92400E;margin-top:6px">Este monto se descuenta directamente del saldo UF de la OC — no afecta los montos en pesos de la factura (Neto / IVA / Total).</div>
+      </div>
+      <!-- Campo USD: solo visible si la OC seleccionada es en USD -->
+      <div id="f-usd-row" style="display:none;margin-top:12px;padding:12px 14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--rs)">
+        <div style="font-size:12px;font-weight:700;color:#1D4ED8;margin-bottom:8px">⚠️ OC en USD — ingresa el monto en USD cobrado en esta factura</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:12px;font-weight:600;color:#1D4ED8;white-space:nowrap">Monto USD de la factura:</label>
+          <input type="number" id="f-valor-usd" placeholder="ej: 2988" step="0.01"
+            style="padding:7px 10px;border:1px solid #BFDBFE;border-radius:var(--rs);font-family:inherit;font-size:13px;width:140px;background:#F0F9FF;color:#1E3A8A;outline:none"
+            oninput="updateSaldoPreview()"/>
+        </div>
+        <div style="font-size:11px;color:#1D4ED8;margin-top:6px">Este monto se descuenta directamente del saldo USD de la OC — no afecta los montos en pesos de la factura (Neto / IVA / Total).</div>
       </div>
       <!-- Saldo OC preview -->
       <div id="f-saldo-preview" style="display:none;margin-top:14px">
@@ -581,6 +609,16 @@ tbody td strong{color:var(--text);font-weight:600}
               oninput="updateImpfSaldo()"/>
           </div>
           <div style="font-size:11px;color:#92400E;margin-top:6px">Este monto se descuenta directamente del saldo UF de la OC — no afecta los montos en pesos de la factura.</div>
+        </div>
+        <!-- Campo USD: visible si la OC seleccionada es en USD -->
+        <div id="impf-usd-row" style="display:none;margin-top:12px;padding:12px 14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--rs)">
+          <div style="font-size:12px;font-weight:700;color:#1D4ED8;margin-bottom:8px">⚠️ OC en USD — ingresa el monto en USD cobrado en esta factura</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="impf-valor-usd" placeholder="ej: 2988" step="0.01"
+              style="padding:7px 10px;border:1px solid #BFDBFE;border-radius:var(--rs);font-family:inherit;font-size:13px;width:150px;background:#F0F9FF;color:#1E3A8A;outline:none"
+              oninput="updateImpfSaldo()"/>
+          </div>
+          <div style="font-size:11px;color:#1D4ED8;margin-top:6px">Este monto se descuenta directamente del saldo USD de la OC — no afecta los montos en pesos de la factura.</div>
         </div>
         <!-- Saldo OC preview -->
         <div id="impf-saldo-wrap" style="display:none;margin-top:12px">
@@ -753,6 +791,16 @@ tbody td strong{color:var(--text);font-weight:600}
           </div>
           <div style="font-size:11px;color:#92400E;margin-top:6px">Este monto se descuenta directamente del saldo UF de la OC — no afecta los montos en pesos de la boleta.</div>
         </div>
+        <!-- Campo USD: visible si la OC seleccionada es en USD -->
+        <div id="impb-usd-row" style="display:none;margin-top:12px;padding:12px 14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--rs)">
+          <div style="font-size:12px;font-weight:700;color:#1D4ED8;margin-bottom:8px">⚠️ OC en USD — ingresa el monto en USD cobrado en esta boleta</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="impb-valor-usd" placeholder="ej: 500" step="0.01"
+              style="padding:7px 10px;border:1px solid #BFDBFE;border-radius:var(--rs);font-family:inherit;font-size:13px;width:150px;background:#F0F9FF;color:#1E3A8A;outline:none"
+              oninput="updateImpbSaldo()"/>
+          </div>
+          <div style="font-size:11px;color:#1D4ED8;margin-top:6px">Este monto se descuenta directamente del saldo USD de la OC — no afecta los montos en pesos de la boleta.</div>
+        </div>
         <div id="impb-saldo-wrap" style="display:none;margin-top:12px">
           <div class="bbar-wrap">
             <div class="bbar-labels"><span id="impb-saldo-label"></span><span id="impb-saldo-pct"></span></div>
@@ -792,6 +840,7 @@ tbody td strong{color:var(--text);font-weight:600}
           <label style="margin:0">Moneda:</label>
           <label style="margin:0;font-weight:400"><input type="radio" name="noc-moneda" value="pesos" checked onchange="toggleNocMoneda()"> Pesos ($)</label>
           <label style="margin:0;font-weight:400"><input type="radio" name="noc-moneda" value="uf" onchange="toggleNocMoneda()"> UF</label>
+          <label style="margin:0;font-weight:400"><input type="radio" name="noc-moneda" value="usd" onchange="toggleNocMoneda()"> USD (US$)</label>
         </div>
         <div class="form-group"><label id="noc-sub-label">Subtotal (Neto)</label><input type="number" id="noc-subtotal" placeholder="0" oninput="calcNocTotals()"/></div>
         <div class="form-group"><label id="noc-iva-label">IVA</label><input type="number" id="noc-iva" placeholder="0" oninput="calcNocTotals()"/></div>
@@ -1021,6 +1070,7 @@ function ocToFields(oc) {
     Total:        oc.total||0,
     Estado:       oc.estado||'aprobada',
     IsUF:         oc.isUF||false,
+    IsUSD:        oc.isUSD||false,
     OrigenPDF:    oc.origenPDF||false,
     Observaciones:oc.observaciones||'',
     MailCompras:  oc.mailCompras||'',
@@ -1043,6 +1093,7 @@ function fieldsToOC(item) {
     total:        parseFloat(f.Total)||0,
     estado:       f.Estado||'aprobada',
     isUF:         f.IsUF||false,
+    isUSD:        f.IsUSD||false,
     origenPDF:    f.OrigenPDF||false,
     observaciones:f.Observaciones||'',
     mailCompras:  f.MailCompras||'',
@@ -1065,6 +1116,7 @@ function factToFields(f) {
     Iva:            f.iva||0,
     Total:          f.total||0,
     ValorUF:        f.valorUF||0,
+    ValorUSD:       f.valorUSD||0,
     MailAprov:      f.mailAprov||'',
     Estado:         f.estado||'ingresada',
     FechaAprobacion:f.fechaAprobacion||'',
@@ -1091,6 +1143,7 @@ function fieldsToFact(item) {
     iva:            parseFloat(f.Iva)||0,
     total:          parseFloat(f.Total)||0,
     valorUF:        parseFloat(f.ValorUF)||0,
+    valorUSD:       parseFloat(f.ValorUSD)||0,
     mailAprov:      f.MailAprov||'',
     estado:         f.Estado||'ingresada',
     fechaAprobacion:f.FechaAprobacion||'',
@@ -1217,19 +1270,50 @@ function facturadoByOCenUF(nocId) {
     return s;
   }, 0);
 }
-// Retorna objeto de saldo según tipo de OC (UF o pesos)
+// Para OC en USD: igual que UF, pero con el monto en USD cobrado directamente en la factura/boleta
+function facturadoByOCenUSD(nocId) {
+  return factData.filter(f => f.ocId === nocId).reduce((s,f) => {
+    if (f.valorUSD && f.valorUSD > 0) return s + f.valorUSD;
+    return s;
+  }, 0);
+}
+// Retorna objeto de saldo según tipo de OC (UF, USD o pesos)
 function saldoOC(oc) {
+  if (oc.isUSD) {
+    const usdUsado = facturadoByOCenUSD(oc.noc);
+    const pesosUsado = facturadoByOC(oc.noc);
+    const usdSaldo = oc.total - usdUsado;
+    const pct      = oc.total > 0 ? Math.min(usdUsado/oc.total*100, 100) : 0;
+    return { isUF:false, isUSD:true, usdTotal:oc.total, usdUsado, usdSaldo, pesosUsado, pct, over: usdUsado > oc.total };
+  }
   if (oc.isUF) {
     const ufUsado  = facturadoByOCenUF(oc.noc);
     const pesosUsado = facturadoByOC(oc.noc);
     const ufSaldo  = oc.total - ufUsado;
     const pct      = oc.total > 0 ? Math.min(ufUsado/oc.total*100, 100) : 0;
-    return { isUF:true, ufTotal:oc.total, ufUsado, ufSaldo, pesosUsado, pct, over: ufUsado > oc.total };
+    return { isUF:true, isUSD:false, ufTotal:oc.total, ufUsado, ufSaldo, pesosUsado, pct, over: ufUsado > oc.total };
   }
   const usado = facturadoByOC(oc.noc);
   const saldo = oc.total - usado;
   const pct   = oc.total > 0 ? Math.min(usado/oc.total*100, 100) : 0;
-  return { isUF:false, usado, saldo, pct, over: usado > oc.total };
+  return { isUF:false, isUSD:false, usado, saldo, pct, over: usado > oc.total };
+}
+// Helpers para no repetir la lógica de 3 monedas (pesos / UF / USD) en cada vista
+function ocTieneSaldo(oc) {
+  const s = saldoOC(oc);
+  if (s.isUSD) return s.usdSaldo > 0;
+  if (s.isUF)  return s.ufSaldo  > 0;
+  return (s.saldo||0) > 0;
+}
+function fmtOCMonto(oc, n) {
+  if (oc.isUSD) return fmtUSD(n);
+  if (oc.isUF)  return 'UF ' + fmtUF(n);
+  return fmtCLP(n);
+}
+function ocMonedaBadge(oc) {
+  if (oc.isUSD) return '<span style="font-size:9px;background:#DBEAFE;color:#1E40AF;padding:1px 5px;border-radius:3px;font-weight:700">USD</span>';
+  if (oc.isUF)  return '<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:1px 5px;border-radius:3px;font-weight:700">UF</span>';
+  return '';
 }
 
 // ══════════════════════════════
@@ -1300,8 +1384,7 @@ function refreshDashboard() {
     if (fOC && oc.noc !== fOC) return false;
     if (fEmpresa && oc.unidad !== fEmpresa) return false;
     if (fSaldo) {
-      const s = saldoOC(oc);
-      const tieneSaldo = s.isUF ? s.ufSaldo > 0 : s.saldo > 0;
+      const tieneSaldo = ocTieneSaldo(oc);
       if (fSaldo === 'con' && !tieneSaldo) return false;
       if (fSaldo === 'sin' && tieneSaldo) return false;
     }
@@ -1320,26 +1403,33 @@ function refreshDashboard() {
       const s = saldoOC(oc);
       const cls   = s.over ? 'over' : s.pct > 80 ? 'warn' : '';
       const saldoCls = s.over ? 'zero' : s.pct > 80 ? 'low' : '';
-      const saldoLine = s.isUF
+      const saldoLine = s.isUSD
+        ? `<div class="oc-saldo-disp ${saldoCls}">${fmtUSD(s.usdSaldo)}</div>
+           <div style="font-size:10px;color:var(--gray-400);margin-top:1px">${fmtCLP(s.pesosUsado)} facturado en $</div>`
+        : s.isUF
         ? `<div class="oc-saldo-disp ${saldoCls}">UF ${fmtUF(s.ufSaldo)}</div>
            <div style="font-size:10px;color:var(--gray-400);margin-top:1px">${fmtCLP(s.pesosUsado)} facturado en $</div>`
         : `<div class="oc-saldo-disp ${saldoCls}">${fmtCLP(Math.max(s.saldo,0))}</div>`;
-      const usadoLabel = s.isUF
+      const usadoLabel = s.isUSD
+        ? `${fmtUSD(s.usdUsado)} de ${fmtUSD(s.usdTotal)} (${s.pct.toFixed(0)}%)`
+        : s.isUF
         ? `UF ${fmtUF(s.ufUsado)} de UF ${fmtUF(s.ufTotal)} (${s.pct.toFixed(0)}%)`
         : `Facturado ${fmtCLP(s.usado)} de ${fmtCLP(oc.total)} (${s.pct.toFixed(0)}%)`;
       return `
         <div class="oc-saldo-card">
           <div class="oc-saldo-left">
-            <div class="oc-saldo-num">${oc.noc}${oc.nocManager?' · Manager N°'+oc.nocManager:''}${oc.isUF?' <span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:1px 5px;border-radius:3px;font-weight:700">UF</span>':''}</div>
+            <div class="oc-saldo-num">${oc.noc}${oc.nocManager?' · Manager N°'+oc.nocManager:''} ${ocMonedaBadge(oc)}</div>
             <div class="oc-saldo-prov">${oc.proveedor||'—'}</div>
             <div class="oc-saldo-meta">${oc.unidad||''} · ${fmt(oc.fecha)}</div>
           </div>
           <div class="oc-saldo-bar-wrap">
             <div style="font-size:11px;color:var(--gray-500);margin-bottom:4px">${usadoLabel}</div>
             <div class="bbar"><div class="bbar-fill ${cls}" style="width:${s.pct}%"></div></div>
-            ${s.over ? `<div style="font-size:11px;color:var(--red);margin-top:3px">⚠️ Excedido en ${s.isUF?'UF '+fmtUF(s.ufUsado-s.ufTotal):fmtCLP(s.usado-oc.total)}</div>` : ''}
+            ${s.over ? `<div style="font-size:11px;color:var(--red);margin-top:3px">⚠️ Excedido en ${s.isUSD?fmtUSD(s.usdUsado-s.usdTotal):s.isUF?'UF '+fmtUF(s.ufUsado-s.ufTotal):fmtCLP(s.usado-oc.total)}</div>` : ''}
             ${s.isUF && factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length > 0
               ? `<div style="font-size:11px;color:var(--gold);margin-top:3px">⚠️ ${factData.filter(f=>f.ocId===oc.noc && !f.valorUF).length} factura(s) sin monto UF ingresado</div>` : ''}
+            ${s.isUSD && factData.filter(f=>f.ocId===oc.noc && !f.valorUSD).length > 0
+              ? `<div style="font-size:11px;color:var(--gold);margin-top:3px">⚠️ ${factData.filter(f=>f.ocId===oc.noc && !f.valorUSD).length} factura(s) sin monto USD ingresado</div>` : ''}
           </div>
           <div class="oc-saldo-right">
             <div class="oc-saldo-total">Saldo disponible</div>
@@ -1402,15 +1492,35 @@ function refreshDashboard() {
 // MAESTRO OC
 // ══════════════════════════════
 function renderMaestroOC() {
+  const q     = (document.getElementById('oc-search')?.value||'').toLowerCase();
+  const saldo = document.getElementById('oc-search-saldo')?.value||'';
+  const data  = ocData.filter(oc => {
+    const mq = !q
+      || oc.noc?.toLowerCase().includes(q)
+      || oc.nocManager?.toLowerCase().includes(q)
+      || oc.proveedor?.toLowerCase().includes(q)
+      || oc.unidad?.toLowerCase().includes(q);
+    let ms = true;
+    if (saldo) {
+      const tieneSaldo = ocTieneSaldo(oc);
+      ms = saldo === 'con' ? tieneSaldo : !tieneSaldo;
+    }
+    return mq && ms;
+  });
   const tbody = document.getElementById('maestro-oc-tbody');
   const empty = document.getElementById('maestro-oc-empty');
-  if (!ocData.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  if (!data.length) {
+    tbody.innerHTML='';
+    empty.innerHTML = `<div class="empty-icon">📋</div>${ocData.length ? 'Ninguna OC coincide con la búsqueda/filtro' : 'Importa OC desde Manager con el botón de arriba'}`;
+    empty.style.display='block';
+    return;
+  }
   empty.style.display='none';
-  tbody.innerHTML = [...ocData].reverse().map(oc => {
+  tbody.innerHTML = [...data].reverse().map(oc => {
     const s = saldoOC(oc);
-    const totalDisp  = oc.isUF ? `UF ${fmtUF(oc.total)}` : fmtCLP(oc.total);
-    const usadoDisp  = oc.isUF ? `UF ${fmtUF(s.ufUsado)}` : fmtCLP(s.usado||0);
-    const saldoDisp  = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo||0);
+    const totalDisp  = fmtOCMonto(oc, oc.total);
+    const usadoDisp  = fmtOCMonto(oc, s.isUSD ? s.usdUsado : s.isUF ? s.ufUsado : (s.usado||0));
+    const saldoDisp  = fmtOCMonto(oc, s.isUSD ? s.usdSaldo : s.isUF ? s.ufSaldo : (s.saldo||0));
     const saldoColor = s.over ? 'var(--red)' : 'var(--green)';
     return `
       <tr>
@@ -1419,13 +1529,13 @@ function renderMaestroOC() {
         <td>${fmt(oc.fecha)}</td>
         <td style="font-size:12px">${oc.unidad||'—'}</td>
         <td>${oc.proveedor||'—'}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${oc.isUF?'UF '+fmtUF(oc.subtotal||0):fmtCLP(oc.subtotal||0)}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${oc.isUF?'UF '+fmtUF(oc.iva||0):fmtCLP(oc.iva||0)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtOCMonto(oc, oc.subtotal||0)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmtOCMonto(oc, oc.iva||0)}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${totalDisp}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--purple)">${usadoDisp}</td>
         <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${saldoColor}">${s.over?'⚠️ ':''} ${saldoDisp}</td>
-        <td>${oc.isUF ? `<button class="btn btn-gold btn-sm" style="font-size:11px;padding:4px 8px" onclick="openAjusteTC('${oc.noc}')" title="Ajuste por diferencia de tipo de cambio (±0,02 UF)">⚖️ TC</button>` : ''}</td>
-        <td><span style="font-size:9px;background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-weight:700">APROBADA</span>${oc.origenPDF?'<span style="font-size:9px;background:#EFF6FF;color:#1D4ED8;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">PDF</span>':''}${oc.isUF?'<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">UF</span>':''}</td>
+        <td>${(oc.isUF || oc.isUSD) ? `<button class="btn btn-gold btn-sm" style="font-size:11px;padding:4px 8px" onclick="openAjusteTC('${oc.noc}')" title="Ajuste por diferencia de tipo de cambio (±0,02)">⚖️ TC</button>` : ''}</td>
+        <td><span style="font-size:9px;background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-weight:700">APROBADA</span>${oc.origenPDF?'<span style="font-size:9px;background:#EFF6FF;color:#1D4ED8;padding:2px 6px;border-radius:4px;font-weight:700;margin-left:3px">PDF</span>':''} ${ocMonedaBadge(oc)}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-secondary btn-sm" onclick="openOCDetail('${oc.noc}')">Ver</button>
           <button class="btn btn-secondary btn-sm" onclick="openEditOC('${oc.noc}')" title="Editar">✏️</button>
@@ -1474,6 +1584,11 @@ function clearFactSearch() {
   document.getElementById('fact-search-estado').value='';
   renderMaestroFact();
 }
+function clearOCSearch() {
+  document.getElementById('oc-search').value='';
+  document.getElementById('oc-search-saldo').value='';
+  renderMaestroOC();
+}
 
 // ══════════════════════════════
 // MODAL FACTURA
@@ -1487,15 +1602,18 @@ function openFactModal(prefillOC) {
   document.getElementById('f-saldo-preview').style.display = 'none';
   const ufRow = document.getElementById('f-uf-row');
   if (ufRow) ufRow.style.display = 'none';
+  const usdRow = document.getElementById('f-usd-row');
+  if (usdRow) usdRow.style.display = 'none';
+  const fValorUsdEl = document.getElementById('f-valor-usd'); if (fValorUsdEl) fValorUsdEl.value = '';
 
   // Fill OC select — solo muestra OC con saldo disponible (saldo > 0)
   const sel = document.getElementById('f-oc');
   sel.innerHTML = '<option value="">— Selecciona una OC —</option>' +
     ocData
-      .filter(oc => { const s = saldoOC(oc); return oc.isUF ? s.ufSaldo > 0 : (s.saldo||0) > 0; })
+      .filter(oc => ocTieneSaldo(oc))
       .map(oc => {
         const s = saldoOC(oc);
-        const saldoStr = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo);
+        const saldoStr = fmtOCMonto(oc, s.isUSD ? s.usdSaldo : s.isUF ? s.ufSaldo : s.saldo);
         return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
       }).join('');
   if (prefillOC) sel.value = prefillOC;
@@ -1506,8 +1624,9 @@ function openFactModal(prefillOC) {
       // Pre-rellena el proveedor SOLO si el campo está vacío — no pisa lo que el usuario escribió
       const provEl = document.getElementById('f-prov');
       if (!provEl.value.trim()) provEl.value = oc.proveedor || '';
-      // Show/hide UF field
-      if (ufRow) ufRow.style.display = oc.isUF ? 'flex' : 'none';
+      // Show/hide UF/USD field
+      if (ufRow)  ufRow.style.display  = oc.isUF  ? 'flex' : 'none';
+      if (usdRow) usdRow.style.display = oc.isUSD ? 'flex' : 'none';
       updateSaldoPreview();
     }
   };
@@ -1531,7 +1650,21 @@ function updateSaldoPreview() {
 
   document.getElementById('f-saldo-preview').style.display = 'block';
 
-  if (oc.isUF) {
+  if (oc.isUSD) {
+    const usdFact  = parseFloat(document.getElementById('f-valor-usd')?.value)||0;
+    const usdUsado = facturadoByOCenUSD(ocId);
+    const usdNuevo = usdUsado + usdFact;
+    const pct      = oc.total > 0 ? Math.min(usdNuevo/oc.total*100,100) : 0;
+    const over     = usdNuevo > oc.total;
+    const cls      = over ? 'over' : pct > 80 ? 'warn' : '';
+    document.getElementById('f-saldo-label').textContent = `OC ${ocId} (USD) — Total: ${fmtUSD(oc.total)}`;
+    document.getElementById('f-saldo-pct').textContent   = usdFact > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa el monto USD de la factura';
+    document.getElementById('f-saldo-fill').style.width  = pct + '%';
+    document.getElementById('f-saldo-fill').className    = `bbar-fill ${cls}`;
+    document.getElementById('f-saldo-sub').textContent   = usdFact > 0
+      ? (over ? `⚠️ Excede ${fmtUSD(usdNuevo-oc.total)}` : `Saldo USD: ${fmtUSD(oc.total-usdNuevo)} · Esta factura = ${fmtUSD(usdFact)}`)
+      : 'Ingresa el monto USD cobrado en esta factura para ver el saldo';
+  } else if (oc.isUF) {
     const ufFact  = parseFloat(document.getElementById('f-valor-uf')?.value)||0;
     const ufUsado = facturadoByOCenUF(ocId);
     const ufNuevo = ufUsado + ufFact;
@@ -1582,15 +1715,17 @@ function saveFact() {
   }
 
   const oc = ocData.find(o => o.noc === ocId);
-  const valorUF = oc?.isUF ? (parseFloat(document.getElementById('f-valor-uf')?.value)||0) : 0;
-  if (oc?.isUF && !valorUF) { notify('Debes ingresar el monto en UF cobrado en esta factura para OC en UF','error'); return; }
+  const valorUF  = oc?.isUF  ? (parseFloat(document.getElementById('f-valor-uf')?.value)||0)  : 0;
+  const valorUSD = oc?.isUSD ? (parseFloat(document.getElementById('f-valor-usd')?.value)||0) : 0;
+  if (oc?.isUF  && !valorUF)  { notify('Debes ingresar el monto en UF cobrado en esta factura para OC en UF','error'); return; }
+  if (oc?.isUSD && !valorUSD) { notify('Debes ingresar el monto en USD cobrado en esta factura para OC en USD','error'); return; }
 
   const fact = {
     id: getNextFactNum(), num, ocId,
     proveedor:  document.getElementById('f-prov').value.trim() || oc?.proveedor || '',
     glosa:      document.getElementById('f-glosa').value.trim(),
     fechaIngreso: document.getElementById('f-fecha').value,
-    neto, iva, total, valorUF,
+    neto, iva, total, valorUF, valorUSD,
     mailAprov:  document.getElementById('f-mail-aprov').value.trim(),
     estado: 'ingresada', fechaAprobacion: null, aprobo: null,
     createdAt: new Date().toISOString(),
@@ -1599,9 +1734,11 @@ function saveFact() {
   // Budget overrun check
   const s = saldoOC({...oc});
   let over = false;
-  if (oc.isUF && valorUF > 0) {
+  if (oc.isUSD && valorUSD > 0) {
+    over = (s.usdUsado + valorUSD) > oc.total;
+  } else if (oc.isUF && valorUF > 0) {
     over = (s.ufUsado + valorUF) > oc.total;
-  } else if (!oc.isUF) {
+  } else if (!oc.isUF && !oc.isUSD) {
     over = (facturadoByOC(ocId) + total) > oc.total;
   }
   if (over) {
@@ -1773,9 +1910,22 @@ function openOCDetail(noc) {
   document.getElementById('ocdet-iva').textContent   = fmtCLP(oc.iva||0);
   document.getElementById('ocdet-total').textContent = fmtCLP(oc.total);
 
-  // Budget bar — dual UF/pesos
+  // Budget bar — dual moneda/pesos
   const s = saldoOC(oc);
-  const bbarHtml = oc.isUF ? `
+  const bbarHtml = oc.isUSD ? `
+    <div class="bbar-wrap">
+      <div class="bbar-labels"><span>USD utilizado: ${fmtUSD(s.usdUsado)} / ${fmtUSD(s.usdTotal)}</span><span>${s.pct.toFixed(1)}%</span></div>
+      <div class="bbar"><div class="bbar-fill ${s.over?'over':s.pct>80?'warn':''}" style="width:${s.pct}%"></div></div>
+      <div class="bbar-sub">${s.over?`⚠️ Excedido en ${fmtUSD(s.usdUsado-s.usdTotal)}`:`Saldo USD: ${fmtUSD(s.usdSaldo)}`}</div>
+    </div>
+    <div class="uf-block" style="margin-top:10px">
+      <div class="uf-title">Resumen en ambas monedas</div>
+      <div class="uf-row"><span class="ul">Total OC</span><span class="uv">${fmtUSD(oc.total)}</span></div>
+      <div class="uf-row"><span class="ul">Facturado (en $)</span><span class="uv">${fmtCLP(s.pesosUsado)}</span></div>
+      <div class="uf-row"><span class="ul">Facturado (en USD)</span><span class="uv">${fmtUSD(s.usdUsado)}</span></div>
+      <div class="uf-row"><span class="ul">Saldo disponible</span><span class="uv" style="color:${s.over?'var(--red)':'var(--green)'}">${fmtUSD(s.usdSaldo)}</span></div>
+      ${factData.filter(f=>f.ocId===noc && !f.valorUSD).length?`<div style="font-size:11px;color:var(--gold);margin-top:6px">⚠️ ${factData.filter(f=>f.ocId===noc && !f.valorUSD).length} factura(s) sin monto USD — no incluidas en el cálculo USD</div>`:''}
+    </div>` : oc.isUF ? `
     <div class="bbar-wrap">
       <div class="bbar-labels"><span>UF utilizada: ${fmtUF(s.ufUsado)} / UF ${fmtUF(s.ufTotal)}</span><span>${s.pct.toFixed(1)}%</span></div>
       <div class="bbar"><div class="bbar-fill ${s.over?'over':s.pct>80?'warn':''}" style="width:${s.pct}%"></div></div>
@@ -1799,15 +1949,21 @@ function openOCDetail(noc) {
   const facts = factData.filter(f => f.ocId === noc);
   document.getElementById('ocdet-facturas').innerHTML = facts.length
     ? facts.map(f => {
-        const ufLine = oc.isUF && f.valorUF
-          ? `<span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 5px;border-radius:3px">UF ${fmtUF(f.valorUF)}</span>`
-          : oc.isUF ? `<span style="font-size:10px;color:var(--gold)">⚠️ Sin monto UF</span>` : '';
+        const monedaLine = oc.isUSD
+          ? (f.valorUSD
+              ? `<span style="font-size:10px;color:#1D4ED8;background:#DBEAFE;padding:1px 5px;border-radius:3px">${fmtUSD(f.valorUSD)}</span>`
+              : `<span style="font-size:10px;color:var(--gold)">⚠️ Sin monto USD</span>`)
+          : oc.isUF
+          ? (f.valorUF
+              ? `<span style="font-size:10px;color:#92400E;background:#FEF3C7;padding:1px 5px;border-radius:3px">UF ${fmtUF(f.valorUF)}</span>`
+              : `<span style="font-size:10px;color:var(--gold)">⚠️ Sin monto UF</span>`)
+          : '';
         return `
           <div class="inv-card">
             <div class="ic-left">
               <div class="ic-num">🧾 Factura N° ${f.num}</div>
               <div class="ic-meta">${fmt(f.fechaIngreso)} · ${f.glosa||'—'}</div>
-              ${ufLine}
+              ${monedaLine}
             </div>
             <div class="ic-right">
               <span class="${badgeFact(f.estado)}">${f.estado}</span>
@@ -2022,20 +2178,20 @@ function parseManagerOC(text) {
   const provPatterns = [
     /Proveedor\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
     /Se[ñn]ores\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
-    /Se[ñn]or(?:es)?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
+    /Se[ñn]or(?:\(es\)|es)?\s*[:\-]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ\s\,\.]+?)(?:\s{2,}|Fecha Documento|Atenci[oó]n|Rut\s*:)/i,
   ];
   let provM = null;
   for (const pat of provPatterns) { provM = text.match(pat); if (provM) break; }
   const proveedor = provM ? provM[1].trim().replace(/\s+/g,' ') : '';
 
   // ── Montos: buscar en sección "Facturación" ──
-  // Soporta "$" y "UF" como prefijo/sufijo de monto
-  // Formato: "Neto : $ 1.186.500" o "Neto : UF 3.820,4000"
-  const netoStr  = first(/Neto\s*[:\-]\s*(?:\$|UF)?\s*([\d\.\,]+)/i);
-  const ivaStr   = first(/IVA\s*[:\-]\s*(?:\$|UF)?\s*([\d\.\,]+)/i);
+  // Soporta "$", "UF" y "US$" como prefijo/sufijo de monto
+  // Formato: "Neto : $ 1.186.500" o "Neto : UF 3.820,4000" o "Neto : US$ 2.988,0000"
+  const netoStr  = first(/Neto\s*[:\-]\s*(?:US\$|UF|\$)?\s*([\d\.\,]+)/i);
+  const ivaStr   = first(/IVA\s*[:\-]\s*(?:US\$|UF|\$)?\s*([\d\.\,]+)/i);
   // Para el total buscamos específicamente el último "Total :" que aparece en la sección de facturación
   // Evitamos que tome la columna "Total" de la tabla de ítems (que puede tener el mismo valor)
-  const totalMatches = [...text.matchAll(/Total\s*[:\-]\s*(?:\$|UF)?\s*([\d\.\,]+)/gi)];
+  const totalMatches = [...text.matchAll(/Total\s*[:\-]\s*(?:US\$|UF|\$)?\s*([\d\.\,]+)/gi)];
   const totalStr = totalMatches.length ? totalMatches[totalMatches.length-1][1] : '';
 
   const subtotal = parseMonto(netoStr);
@@ -2064,12 +2220,13 @@ function parseManagerOC(text) {
     items.push({ desc, qty: 1, price: subtotal });
   }
 
-  // Detect UF-based OC
-  const _isUF = /UF\s*[\d\.,]+/i.test(text);
+  // Detectar moneda: USD (US$) o UF — mutuamente excluyentes, se prioriza USD
+  const _isUSD = /US\$\s*[\d\.,]+/i.test(text);
+  const _isUF  = !_isUSD && /UF\s*[\d\.,]+/i.test(text);
 
   const obs = first(/Observaciones\s*[:\-]?\s*\n?\s*([^\n\r]{10,200})/i);
 
-  return { nocManager, fecha, unidad, unidadRut, proveedor, provRut, subtotal, iva, total, items, observaciones: obs || '', _isUF };
+  return { nocManager, fecha, unidad, unidadRut, proveedor, provRut, subtotal, iva, total, items, observaciones: obs || '', _isUF, _isUSD };
 }
 
 function showImpError(msg) {
@@ -2079,23 +2236,21 @@ function showImpError(msg) {
 }
 
 function showImpPreview(d) {
-  // Detect if UF-based OC
-  const isUF = /UF\s*[\d\.,]+/i.test(d._rawText || '');
-
+  const monedaPre = d._isUSD ? 'US$ ' : d._isUF ? 'UF ' : '';
   const fields = [
     ['N° OC Manager', d.nocManager||'—'], ['Fecha', d.fecha||'—'],
     ['Empresa emisora', d.unidad||'—'], ['RUT Emisor', d.unidadRut||'—'],
     ['Proveedor', d.proveedor||'⚠️ No detectado — completa abajo'],
     ['RUT Proveedor', d.provRut||'—'],
-    ['Neto', (d._isUF?'UF ':'')+fmtCLP(d.subtotal)],
-    ['IVA',  (d._isUF?'UF ':'')+fmtCLP(d.iva)],
-    ['Total',(d._isUF?'UF ':'')+fmtCLP(d.total)],
+    ['Neto', monedaPre+fmtCLP(d.subtotal)],
+    ['IVA',  monedaPre+fmtCLP(d.iva)],
+    ['Total',monedaPre+fmtCLP(d.total)],
   ];
   document.getElementById('prev-grid').innerHTML = fields.map(([l,v]) =>
     `<div class="prev-field"><span class="pl">${l}:</span> <span style="${!v||v.startsWith('⚠️')?'color:var(--gold);font-weight:600':''}">${v}</span></div>`).join('');
   document.getElementById('prev-items').innerHTML = (d.items||[]).map(i =>
     `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid #BBF7D0;display:flex;justify-content:space-between;gap:12px">
-      <span>${i.qty} × ${i.desc}</span><span style="font-weight:600">${(d._isUF?'UF ':'')+fmtCLP(i.qty*i.price)}</span>
+      <span>${i.qty} × ${i.desc}</span><span style="font-weight:600">${monedaPre+fmtCLP(i.qty*i.price)}</span>
     </div>`).join('') || '<span style="font-size:12px;color:var(--gray-400)">No se detectaron ítems</span>';
   document.getElementById('imp-preview').classList.add('show');
   document.getElementById('imp-extra').style.display = 'block';
@@ -2103,8 +2258,9 @@ function showImpPreview(d) {
   document.getElementById('imp-unidad').value    = d.unidad    || '';
   document.getElementById('imp-proveedor').value = d.proveedor || '';
   document.getElementById('imp-prov-rut').value  = d.provRut   || '';
-  // Show UF warning if needed
-  document.getElementById('imp-uf-note').style.display = d._isUF ? 'block' : 'none';
+  // Show UF/USD warning if needed
+  document.getElementById('imp-uf-note').style.display  = d._isUF  ? 'block' : 'none';
+  document.getElementById('imp-usd-note').style.display = d._isUSD ? 'block' : 'none';
   document.getElementById('imp-btn-save').style.display = 'inline-flex';
 }
 
@@ -2132,7 +2288,7 @@ function saveImportedOC() {
     noc, nocManager:d.nocManager||'', fecha:d.fecha||new Date().toISOString().split('T')[0],
     unidad, unidadRut:d.unidadRut||'', proveedor, provRut,
     items:d.items||[], subtotal:d.subtotal||0, iva:d.iva||0, total:d.total||0,
-    estado:'aprobada', origenPDF:true, isUF:d._isUF||false, mailCompras:mail,
+    estado:'aprobada', origenPDF:true, isUF:d._isUF||false, isUSD:d._isUSD||false, mailCompras:mail,
     observaciones:d.observaciones||'', createdAt:new Date().toISOString(),
   };
   ocData.push(oc);
@@ -2140,7 +2296,7 @@ function saveImportedOC() {
     closeModal('modal-import');
     showPage('maestro-oc');
     refreshDashboard(); renderMaestroOC();
-    notify(`✅ OC ${noc} registrada (Manager N°${d.nocManager}${d._isUF?' · UF':''}) — guardada en SharePoint`, 'success');
+    notify(`✅ OC ${noc} registrada (Manager N°${d.nocManager}${d._isUSD?' · USD':d._isUF?' · UF':''}) — guardada en SharePoint`, 'success');
   }).catch(()=>{});
 }
 
@@ -2158,6 +2314,8 @@ function openImportFactModal() {
   document.getElementById('impf-saldo-wrap').style.display = 'none';
   document.getElementById('impf-uf-row').style.display = 'none';
   document.getElementById('impf-valor-uf').value = '';
+  document.getElementById('impf-usd-row').style.display = 'none';
+  document.getElementById('impf-valor-usd').value = '';
   document.getElementById('impf-proveedor').value = '';
   // El selector de OC se llena DESPUÉS de parsear el PDF (filtrado por proveedor)
   const sel = document.getElementById('impf-oc');
@@ -2340,10 +2498,7 @@ function showImpFactPreview(d) {
 function fillImpfOCSelect(rutEmisor, nombreEmisor) {
   const sel = document.getElementById('impf-oc');
   const rutNorm = (r) => (r||'').replace(/[\.\-\s]/g,'').toLowerCase();
-  const ocConSaldo = ocData.filter(oc => {
-    const s = saldoOC(oc);
-    return oc.isUF ? s.ufSaldo > 0 : (s.saldo||0) > 0;
-  });
+  const ocConSaldo = ocData.filter(oc => ocTieneSaldo(oc));
   // Intenta match por RUT del proveedor en la OC
   const rutBusq = rutNorm(rutEmisor);
   let ocFiltradas = rutBusq
@@ -2364,7 +2519,7 @@ function fillImpfOCSelect(rutEmisor, nombreEmisor) {
     : `<option value="">— OC de ${nombreEmisor||'este proveedor'} con saldo —</option>`) +
     ocFiltradas.map(oc => {
       const s = saldoOC(oc);
-      const saldoStr = oc.isUF ? `UF ${fmtUF(s.ufSaldo)}` : fmtCLP(s.saldo);
+      const saldoStr = fmtOCMonto(oc, s.isUSD ? s.usdSaldo : s.isUF ? s.ufSaldo : s.saldo);
       return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
     }).join('');
   if (usandoTodas) sel.selectedIndex = 0;
@@ -2376,14 +2531,30 @@ function updateImpfSaldo() {
   const total = importedFactData?.total || 0;
   const oc = ocData.find(o => o.noc === ocId);
 
-  // Show/hide UF row
+  // Show/hide UF/USD row
   const ufRow = document.getElementById('impf-uf-row');
   if (ufRow) ufRow.style.display = oc?.isUF ? 'block' : 'none';
+  const usdRow = document.getElementById('impf-usd-row');
+  if (usdRow) usdRow.style.display = oc?.isUSD ? 'block' : 'none';
 
   if (!oc || !total) { document.getElementById('impf-saldo-wrap').style.display='none'; return; }
   document.getElementById('impf-saldo-wrap').style.display = 'block';
 
-  if (oc.isUF) {
+  if (oc.isUSD) {
+    const usdFact  = parseFloat(document.getElementById('impf-valor-usd')?.value)||0;
+    const usdUsado = facturadoByOCenUSD(ocId);
+    const usdNuevo = usdUsado + usdFact;
+    const pct      = oc.total > 0 ? Math.min(usdNuevo/oc.total*100,100) : 0;
+    const over     = usdNuevo > oc.total;
+    const cls      = over ? 'over' : pct > 80 ? 'warn' : '';
+    document.getElementById('impf-saldo-label').textContent  = `OC ${ocId} (USD) — Total: ${fmtUSD(oc.total)}`;
+    document.getElementById('impf-saldo-pct').textContent    = usdFact > 0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa el monto USD';
+    document.getElementById('impf-saldo-fill').style.width   = pct + '%';
+    document.getElementById('impf-saldo-fill').className     = `bbar-fill ${cls}`;
+    document.getElementById('impf-saldo-sub').textContent    = usdFact > 0
+      ? (over ? `⚠️ Excede ${fmtUSD(usdNuevo-oc.total)}` : `Saldo: ${fmtUSD(oc.total-usdNuevo)} · Esta factura = ${fmtUSD(usdFact)}`)
+      : 'Ingresa el monto USD cobrado en la factura para ver el saldo';
+  } else if (oc.isUF) {
     const ufFact  = parseFloat(document.getElementById('impf-valor-uf')?.value)||0;
     const ufUsado = facturadoByOCenUF(ocId);
     const ufNuevo = ufUsado + ufFact;
@@ -2438,12 +2609,17 @@ function saveImportedFact() {
 
   const oc = ocData.find(o => o.noc === ocId);
 
-  // Para OC en UF se requiere el monto UF cobrado en la factura
-  let valorUF = 0;
+  // Para OC en UF/USD se requiere el monto cobrado en esa moneda en la factura
+  let valorUF = 0, valorUSD = 0;
   if (oc?.isUF) {
     const impfUFEl = document.getElementById('impf-valor-uf');
     valorUF = impfUFEl ? parseFloat(impfUFEl.value)||0 : 0;
     if (!valorUF) { notify('Esta OC es en UF. Ingresa el monto en UF cobrado en esta factura.','error'); return; }
+  }
+  if (oc?.isUSD) {
+    const impfUSDEl = document.getElementById('impf-valor-usd');
+    valorUSD = impfUSDEl ? parseFloat(impfUSDEl.value)||0 : 0;
+    if (!valorUSD) { notify('Esta OC es en USD. Ingresa el monto en USD cobrado en esta factura.','error'); return; }
   }
 
   const fact = {
@@ -2458,7 +2634,7 @@ function saveImportedFact() {
     fechaVenc:   d.fechaVenc || '',
     formaPago:   d.formaPago || '',
     neto: d.neto, iva: d.iva, total: d.total,
-    valorUF,
+    valorUF, valorUSD,
     mailAprov: mail, estado: 'ingresada',
     fechaAprobacion: null, aprobo: null,
     origenPDF: true, createdAt: new Date().toISOString(),
@@ -2466,9 +2642,11 @@ function saveImportedFact() {
 
   // Budget alert
   let over = false;
-  if (oc?.isUF && valorUF > 0) {
+  if (oc?.isUSD && valorUSD > 0) {
+    over = (facturadoByOCenUSD(ocId) + valorUSD) > oc.total;
+  } else if (oc?.isUF && valorUF > 0) {
     over = (facturadoByOCenUF(ocId) + valorUF) > oc.total;
-  } else if (oc && !oc.isUF) {
+  } else if (oc && !oc.isUF && !oc.isUSD) {
     over = (facturadoByOC(ocId) + d.total) > oc.total;
   }
   if (over) {
@@ -2751,38 +2929,42 @@ async function saveUFData() {
 
 function openAjusteTC(noc) {
   const oc = ocData.find(o => o.noc === noc);
-  if (!oc || !oc.isUF) return;
+  if (!oc || (!oc.isUF && !oc.isUSD)) return;
 
-  const s          = saldoOC(oc);
-  const saldoAbs   = Math.abs(s.ufSaldo);
-  const LIMITE     = 0.02; // ±0,02 UF máximo permitido para ajuste TC
+  const s = saldoOC(oc);
+  const monedaLabel = oc.isUSD ? 'USD' : 'UF';
+  const fmtM = n => oc.isUSD ? fmtUSD(n) : ('UF ' + fmtUF(n));
+  const saldoVal = oc.isUSD ? s.usdSaldo : s.ufSaldo;
+  const usadoVal = oc.isUSD ? s.usdUsado : s.ufUsado;
+  const saldoAbs = Math.abs(saldoVal);
+  const LIMITE   = 0.02; // ±0,02 máximo permitido para ajuste TC
 
   if (saldoAbs > LIMITE) {
     notify(
-      `⚠️ El saldo de ${fmtUF(s.ufSaldo)} UF supera el límite de ±0,02 UF para Ajuste TC. ` +
-      `Solo se pueden ajustar diferencias menores de 0,02 UF por redondeo de tipo de cambio.`,
+      `⚠️ El saldo de ${fmtM(saldoVal)} supera el límite de ±0,02 ${monedaLabel} para Ajuste TC. ` +
+      `Solo se pueden ajustar diferencias menores de 0,02 ${monedaLabel} por redondeo de tipo de cambio.`,
       'error'
     );
     return;
   }
 
-  const nuevoTotal = Math.round((oc.total - s.ufSaldo) * 10000) / 10000;
-  const direccion  = s.ufSaldo > 0
-    ? `reducir el total en UF ${fmtUF(s.ufSaldo)} (saldo a favor)`
-    : `aumentar el total en UF ${fmtUF(Math.abs(s.ufSaldo))} (leve excedente por TC)`;
+  const nuevoTotal = Math.round((oc.total - saldoVal) * 10000) / 10000;
+  const direccion  = saldoVal > 0
+    ? `reducir el total en ${fmtM(saldoVal)} (saldo a favor)`
+    : `aumentar el total en ${fmtM(Math.abs(saldoVal))} (leve excedente por TC)`;
 
   const html = `
     <div class="del-confirm" style="background:#FFFBEB;border-color:#FDE68A;color:#92400E">
-      ⚖️ Este ajuste modifica el <strong>Total UF de la OC</strong> para absorber la diferencia de redondeo por tipo de cambio.
+      ⚖️ Este ajuste modifica el <strong>Total ${monedaLabel} de la OC</strong> para absorber la diferencia de redondeo por tipo de cambio.
     </div>
     <div class="form-grid">
       <div class="d-field"><div class="dl">OC</div><div class="dv">${oc.noc}</div></div>
-      <div class="d-field"><div class="dl">Total actual</div><div class="dv" style="font-family:'JetBrains Mono',monospace">UF ${fmtUF(oc.total)}</div></div>
-      <div class="d-field"><div class="dl">Facturado total</div><div class="dv" style="font-family:'JetBrains Mono',monospace">UF ${fmtUF(s.ufUsado)}</div></div>
-      <div class="d-field"><div class="dl">Saldo actual</div><div class="dv" style="font-family:'JetBrains Mono',monospace;color:${s.over?'var(--red)':'var(--green)'}">UF ${fmtUF(s.ufSaldo)}</div></div>
+      <div class="d-field"><div class="dl">Total actual</div><div class="dv" style="font-family:'JetBrains Mono',monospace">${fmtM(oc.total)}</div></div>
+      <div class="d-field"><div class="dl">Facturado total</div><div class="dv" style="font-family:'JetBrains Mono',monospace">${fmtM(usadoVal)}</div></div>
+      <div class="d-field"><div class="dl">Saldo actual</div><div class="dv" style="font-family:'JetBrains Mono',monospace;color:${s.over?'var(--red)':'var(--green)'}">${fmtM(saldoVal)}</div></div>
       <div class="d-field" style="grid-column:1/-1">
         <div class="dl">Acción</div>
-        <div class="dv">Se va a <strong>${direccion}</strong> → nuevo total: <strong style="font-family:'JetBrains Mono',monospace">UF ${fmtUF(nuevoTotal)}</strong>, saldo = UF 0,00</div>
+        <div class="dv">Se va a <strong>${direccion}</strong> → nuevo total: <strong style="font-family:'JetBrains Mono',monospace">${fmtM(nuevoTotal)}</strong>, saldo = ${fmtM(0)}</div>
       </div>
     </div>`;
 
@@ -2798,7 +2980,7 @@ function openAjusteTC(noc) {
     }
     await saveOCToGraph(oc);
     refreshDashboard(); renderMaestroOC();
-    notify(`✅ Ajuste TC aplicado a ${noc}: nuevo total UF ${fmtUF(nuevoTotal)}`, 'success');
+    notify(`✅ Ajuste TC aplicado a ${noc}: nuevo total ${fmtM(nuevoTotal)}`, 'success');
   });
 }
 
@@ -2816,6 +2998,8 @@ function openImportBoletaModal() {
   document.getElementById('impb-saldo-wrap').style.display = 'none';
   document.getElementById('impb-uf-row').style.display = 'none';
   document.getElementById('impb-valor-uf').value = '';
+  document.getElementById('impb-usd-row').style.display = 'none';
+  document.getElementById('impb-valor-usd').value = '';
   document.getElementById('impb-proveedor').value = '';
   document.getElementById('impb-oc').innerHTML = '<option value="">— Selecciona una OC —</option>';
   document.getElementById('modal-import-boleta').classList.add('open');
@@ -2975,7 +3159,7 @@ function showImportBoletaPreview(d) {
   document.getElementById('impb-glosa').value = `Boleta honorarios N°${d.numBoleta||''}`;
   // Selector OC filtrado por RUT del profesional
   const rutNorm = (r) => (r||'').replace(/[\.\-\s]/g,'').toLowerCase();
-  const ocConSaldo = ocData.filter(oc => { const s=saldoOC(oc); return oc.isUF ? s.ufSaldo>0 : (s.saldo||0)>0; });
+  const ocConSaldo = ocData.filter(oc => ocTieneSaldo(oc));
   const rutB = rutNorm(d.rutEmisor);
   let ocFilt = rutB ? ocConSaldo.filter(oc => rutNorm(oc.provRut)===rutB) : [];
   if (!ocFilt.length) ocFilt = ocConSaldo;
@@ -2983,7 +3167,8 @@ function showImportBoletaPreview(d) {
   sel.innerHTML = `<option value="">— OC de ${d.profesional||'este profesional'} —</option>` +
     ocFilt.map(oc => {
       const s=saldoOC(oc);
-      return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${oc.isUF?'UF '+fmtUF(s.ufSaldo):fmtCLP(s.saldo)}</option>`;
+      const saldoStr = fmtOCMonto(oc, s.isUSD ? s.usdSaldo : s.isUF ? s.ufSaldo : s.saldo);
+      return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
     }).join('');
   sel.onchange = updateImpbSaldo;
   document.getElementById('impb-btn-save').style.display = 'inline-flex';
@@ -2994,14 +3179,29 @@ function updateImpbSaldo() {
   const ocId = document.getElementById('impb-oc').value;
   const oc = ocData.find(o => o.noc === ocId);
 
-  // Mostrar/ocultar el campo de monto UF según corresponda
+  // Mostrar/ocultar el campo de monto UF/USD según corresponda
   const ufRow = document.getElementById('impb-uf-row');
   if (ufRow) ufRow.style.display = oc?.isUF ? 'block' : 'none';
+  const usdRow = document.getElementById('impb-usd-row');
+  if (usdRow) usdRow.style.display = oc?.isUSD ? 'block' : 'none';
 
   if (!oc || !d) { document.getElementById('impb-saldo-wrap').style.display='none'; return; }
   document.getElementById('impb-saldo-wrap').style.display = 'block';
 
-  if (oc.isUF) {
+  if (oc.isUSD) {
+    const usdBoleta = parseFloat(document.getElementById('impb-valor-usd')?.value)||0;
+    const usdUsado  = facturadoByOCenUSD(ocId);
+    const usdNuevo  = usdUsado + usdBoleta;
+    const pct       = oc.total>0 ? Math.min(usdNuevo/oc.total*100,100) : 0;
+    const over      = usdNuevo > oc.total;
+    document.getElementById('impb-saldo-label').textContent = `OC ${oc.noc} (USD) — Total: ${fmtUSD(oc.total)}`;
+    document.getElementById('impb-saldo-pct').textContent   = usdBoleta>0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa el monto USD';
+    document.getElementById('impb-saldo-fill').style.width  = pct+'%';
+    document.getElementById('impb-saldo-fill').className    = `bbar-fill ${over?'over':pct>80?'warn':''}`;
+    document.getElementById('impb-saldo-sub').textContent   = usdBoleta>0
+      ? (over ? `⚠️ Excede ${fmtUSD(usdNuevo-oc.total)}` : `Saldo: ${fmtUSD(oc.total-usdNuevo)} · Esta boleta = ${fmtUSD(usdBoleta)}`)
+      : 'Ingresa el monto USD cobrado en la boleta para ver el saldo';
+  } else if (oc.isUF) {
     const ufBoleta = parseFloat(document.getElementById('impb-valor-uf')?.value)||0;
     const ufUsado  = facturadoByOCenUF(ocId);
     const ufNuevo  = ufUsado + ufBoleta;
@@ -3040,12 +3240,17 @@ async function saveImportedBoleta() {
 
   const oc = ocData.find(o => o.noc === ocId);
 
-  // Para OC en UF se requiere el monto UF cobrado en la boleta
-  let valorUF = 0;
+  // Para OC en UF/USD se requiere el monto cobrado en esa moneda en la boleta
+  let valorUF = 0, valorUSD = 0;
   if (oc?.isUF) {
     const impbUFEl = document.getElementById('impb-valor-uf');
     valorUF = impbUFEl ? parseFloat(impbUFEl.value)||0 : 0;
     if (!valorUF) { notify('Esta OC es en UF. Ingresa el monto en UF cobrado en esta boleta.','error'); return; }
+  }
+  if (oc?.isUSD) {
+    const impbUSDEl = document.getElementById('impb-valor-usd');
+    valorUSD = impbUSDEl ? parseFloat(impbUSDEl.value)||0 : 0;
+    if (!valorUSD) { notify('Esta OC es en USD. Ingresa el monto en USD cobrado en esta boleta.','error'); return; }
   }
 
   const fact = {
@@ -3054,7 +3259,7 @@ async function saveImportedBoleta() {
     receptor: d.receptor||'', rutReceptor: d.rutReceptor||'',
     glosa: glosa||'', fechaIngreso: d.fechaEmision||new Date().toISOString().split('T')[0],
     fechaVenc:'', formaPago:'Honorarios',
-    neto: d.liquido, iva:0, total: d.liquido, valorUF,
+    neto: d.liquido, iva:0, total: d.liquido, valorUF, valorUSD,
     mailAprov: mail, estado:'ingresada',
     fechaAprobacion:null, aprobo:null, origenPDF:true,
     createdAt: new Date().toISOString(),
@@ -3083,10 +3288,11 @@ function openNuevaOCModal() {
 }
 
 function toggleNocMoneda() {
-  const isUF = document.querySelector('input[name="noc-moneda"]:checked')?.value === 'uf';
-  document.getElementById('noc-sub-label').textContent   = isUF ? 'Subtotal (UF)' : 'Subtotal (Neto $)';
-  document.getElementById('noc-iva-label').textContent   = isUF ? 'IVA (UF)'      : 'IVA ($)';
-  document.getElementById('noc-total-label').textContent = isUF ? 'Total OC (UF)' : 'Total OC ($)';
+  const moneda = document.querySelector('input[name="noc-moneda"]:checked')?.value || 'pesos';
+  const label = moneda==='uf' ? 'UF' : moneda==='usd' ? 'USD' : '$';
+  document.getElementById('noc-sub-label').textContent   = moneda==='pesos' ? 'Subtotal (Neto $)' : `Subtotal (${label})`;
+  document.getElementById('noc-iva-label').textContent   = moneda==='pesos' ? 'IVA ($)' : `IVA (${label})`;
+  document.getElementById('noc-total-label').textContent = moneda==='pesos' ? 'Total OC ($)' : `Total OC (${label})`;
   calcNocTotals();
 }
 
@@ -3101,7 +3307,9 @@ async function saveNuevaOC() {
   const proveedor = document.getElementById('noc-proveedor').value.trim();
   if (!unidad)    { notify('Ingresa la empresa (unidad de negocio).','error'); return; }
   if (!proveedor) { notify('Ingresa el proveedor o prestador.','error'); return; }
-  const isUF    = document.querySelector('input[name="noc-moneda"]:checked')?.value === 'uf';
+  const moneda  = document.querySelector('input[name="noc-moneda"]:checked')?.value || 'pesos';
+  const isUF    = moneda === 'uf';
+  const isUSD   = moneda === 'usd';
   const sub     = parseFloat(document.getElementById('noc-subtotal').value)||0;
   const iva     = parseFloat(document.getElementById('noc-iva').value)||0;
   const total   = sub + iva;
@@ -3120,7 +3328,7 @@ async function saveNuevaOC() {
     proveedor,
     provRut:     document.getElementById('noc-prov-rut').value.trim(),
     items: [{desc: document.getElementById('noc-obs').value.trim()||proveedor, qty:1, price:sub}],
-    subtotal: sub, iva, total, isUF,
+    subtotal: sub, iva, total, isUF, isUSD,
     estado:'aprobada', origenPDF:false,
     observaciones: document.getElementById('noc-obs').value.trim(),
     mailCompras:   document.getElementById('noc-mail').value.trim(),
@@ -3132,7 +3340,7 @@ async function saveNuevaOC() {
     closeModal('modal-nueva-oc');
     showPage('maestro-oc');
     refreshDashboard(); renderMaestroOC();
-    notify(`✅ OC ${oc.noc} creada — ${proveedor} — ${isUF?'UF '+fmtUF(total):fmtCLP(total)}`,'success');
+    notify(`✅ OC ${oc.noc} creada — ${proveedor} — ${fmtOCMonto(oc, total)}`,'success');
   }).catch(()=>{}).finally(()=>showLoadingOverlay(false));
 }
 
@@ -3177,7 +3385,7 @@ function openEditOC(noc) {
     { label:'RUT Proveedor',    key:'provRut',    val:oc.provRut||'' },
     { label:'Empresa (Unidad)', key:'unidad',     val:oc.unidad||'' },
     { label:'N° Manager',       key:'nocManager', val:oc.nocManager||'' },
-    { label:'Total OC',         key:'total',      val:oc.total, type:'number' },
+    { label:`Total OC (${oc.isUSD?'USD':oc.isUF?'UF':'$'})`, key:'total', val:oc.total, type:'number' },
   ];
   let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando OC <strong>${noc}</strong></div>`;
   html += '<div class="form-grid">';
@@ -3208,10 +3416,12 @@ function openEditFact(id) {
     { label:'Neto ($)',     key:'neto',         val:f.neto, type:'number' },
     { label:'IVA ($)',      key:'iva',          val:f.iva, type:'number' },
     { label:'Mail Aprov.',  key:'mailAprov',    val:f.mailAprov||'' },
-    ...(oc?.isUF ? [{ label:'Monto UF de la factura', key:'valorUF', val:f.valorUF||'', type:'number' }] : []),
+    ...(oc?.isUF  ? [{ label:'Monto UF de la factura',  key:'valorUF',  val:f.valorUF||'',  type:'number' }] : []),
+    ...(oc?.isUSD ? [{ label:'Monto USD de la factura', key:'valorUSD', val:f.valorUSD||'', type:'number' }] : []),
   ];
   let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando Factura <strong>N°${f.num}</strong></div>`;
-  if (oc?.isUF) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El monto UF de la factura es requerido para el cálculo de saldo.</div>`;
+  if (oc?.isUF)  html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El monto UF de la factura es requerido para el cálculo de saldo.</div>`;
+  if (oc?.isUSD) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en USD. El monto USD de la factura es requerido para el cálculo de saldo.</div>`;
   html += '<div class="form-grid">';
   campos.forEach(c => {
     const safeVal = String(c.val ?? '').replace(/"/g, '&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -3265,6 +3475,7 @@ function showGenericModal(title, bodyHtml, onSave) {
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 function fmtCLP(n) { return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n||0); }
 function fmtUF(n)  { return new Intl.NumberFormat('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
+function fmtUSD(n) { return 'US$ ' + new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
 function fmt(d) { if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
 // Convierte un monto tecleado a mano (con o sin formato chileno de miles) a número.
 function parseMontoEditado(v) {
