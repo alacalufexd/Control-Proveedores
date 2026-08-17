@@ -268,27 +268,35 @@ tbody td strong{color:var(--text);font-weight:600}
   <!-- ═══ DASHBOARD ═══ -->
   <div class="page active" id="page-dashboard">
 
-    <!-- Stats facturas -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Facturas</div>
-        <div class="stat-value" id="s-fact-total">0</div>
-        <div class="stat-sub">Todas las facturas</div>
+    <!-- Filtros -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <h3>🔍 Filtros</h3>
+        <button class="btn btn-secondary btn-sm" onclick="resetDashFilters()">Limpiar filtros</button>
       </div>
-      <div class="stat-card gold">
-        <div class="stat-label">En aprobación</div>
-        <div class="stat-value" id="s-fact-pend">0</div>
-        <div class="stat-sub">Pendientes de autorizar</div>
-      </div>
-      <div class="stat-card green">
-        <div class="stat-label">Aprobadas</div>
-        <div class="stat-value" id="s-fact-aprov">0</div>
-        <div class="stat-sub">Autorizadas</div>
-      </div>
-      <div class="stat-card purple">
-        <div class="stat-label">Monto Aprobado</div>
-        <div class="stat-value" id="s-monto-aprov" style="font-size:18px">$0</div>
-        <div class="stat-sub">Total facturado aprobado</div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proveedor</label>
+            <select id="dash-f-proveedor" onchange="refreshDashboard()"><option value="">— Todos —</option></select>
+          </div>
+          <div class="form-group">
+            <label>OC</label>
+            <select id="dash-f-oc" onchange="refreshDashboard()"><option value="">— Todas —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Saldo</label>
+            <select id="dash-f-saldo" onchange="refreshDashboard()">
+              <option value="">— Todas —</option>
+              <option value="con">Con saldo</option>
+              <option value="sin">Sin saldo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Empresa</label>
+            <select id="dash-f-empresa" onchange="refreshDashboard()"><option value="">— Todas —</option></select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1248,24 +1256,67 @@ function showPage(id) {
 // ══════════════════════════════
 // DASHBOARD
 // ══════════════════════════════
-function refreshDashboard() {
-  // Stats facturas
-  const total   = factData.length;
-  const pend    = factData.filter(f => f.estado === 'en aprobación').length;
-  const aprov   = factData.filter(f => f.estado === 'aprobada').length;
-  const montoAp = factData.filter(f => f.estado === 'aprobada').reduce((s,f) => s+(f.total||0), 0);
+// Filtros del Dashboard (Control Proveedores)
+function populateDashFilters() {
+  const provSel = document.getElementById('dash-f-proveedor');
+  const ocSel   = document.getElementById('dash-f-oc');
+  const empSel  = document.getElementById('dash-f-empresa');
+  if (!provSel || !ocSel || !empSel) return;
 
-  document.getElementById('s-fact-total').textContent  = total;
-  document.getElementById('s-fact-pend').textContent   = pend;
-  document.getElementById('s-fact-aprov').textContent  = aprov;
-  document.getElementById('s-monto-aprov').textContent = fmtCLP(montoAp);
+  const proveedores = [...new Set(ocData.map(o => o.proveedor).filter(Boolean))].sort();
+  const empresas    = [...new Set(ocData.map(o => o.unidad).filter(Boolean))].sort();
+  const keepProv = provSel.value, keepOC = ocSel.value, keepEmp = empSel.value;
+
+  provSel.innerHTML = '<option value="">— Todos —</option>' +
+    proveedores.map(p => `<option value="${p.replace(/"/g,'&quot;')}">${p}</option>`).join('');
+  ocSel.innerHTML = '<option value="">— Todas —</option>' +
+    ocData.map(o => `<option value="${o.noc}">${o.noc}${o.nocManager?' (M°'+o.nocManager+')':''} — ${o.proveedor||''}</option>`).join('');
+  empSel.innerHTML = '<option value="">— Todas —</option>' +
+    empresas.map(e => `<option value="${e.replace(/"/g,'&quot;')}">${e}</option>`).join('');
+
+  // Mantener la selección previa si sigue siendo válida tras repoblar
+  if ([...provSel.options].some(o => o.value === keepProv)) provSel.value = keepProv;
+  if ([...ocSel.options].some(o => o.value === keepOC))     ocSel.value   = keepOC;
+  if ([...empSel.options].some(o => o.value === keepEmp))   empSel.value  = keepEmp;
+}
+function resetDashFilters() {
+  ['dash-f-proveedor','dash-f-oc','dash-f-saldo','dash-f-empresa'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  refreshDashboard();
+}
+
+function refreshDashboard() {
+  populateDashFilters();
+
+  // Leer filtros activos
+  const fProveedor = document.getElementById('dash-f-proveedor')?.value || '';
+  const fOC        = document.getElementById('dash-f-oc')?.value || '';
+  const fSaldo     = document.getElementById('dash-f-saldo')?.value || '';
+  const fEmpresa   = document.getElementById('dash-f-empresa')?.value || '';
+
+  const ocFiltradas = ocData.filter(oc => {
+    if (fProveedor && oc.proveedor !== fProveedor) return false;
+    if (fOC && oc.noc !== fOC) return false;
+    if (fEmpresa && oc.unidad !== fEmpresa) return false;
+    if (fSaldo) {
+      const s = saldoOC(oc);
+      const tieneSaldo = s.isUF ? s.ufSaldo > 0 : s.saldo > 0;
+      if (fSaldo === 'con' && !tieneSaldo) return false;
+      if (fSaldo === 'sin' && tieneSaldo) return false;
+    }
+    return true;
+  });
+
+  // Total facturas / stats internos que siguen usando otros gráficos más abajo
+  const total   = factData.length;
 
   // Saldo OC
   const saldoList = document.getElementById('saldo-oc-list');
-  if (!ocData.length) {
-    saldoList.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Sin OC registradas aún</div>';
+  if (!ocFiltradas.length) {
+    saldoList.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>${ocData.length ? 'Ninguna OC coincide con los filtros' : 'Sin OC registradas aún'}</div>`;
   } else {
-    saldoList.innerHTML = ocData.map(oc => {
+    saldoList.innerHTML = ocFiltradas.map(oc => {
       const s = saldoOC(oc);
       const cls   = s.over ? 'over' : s.pct > 80 ? 'warn' : '';
       const saldoCls = s.over ? 'zero' : s.pct > 80 ? 'low' : '';
@@ -1299,7 +1350,7 @@ function refreshDashboard() {
     }).join('');
   }
   document.getElementById('saldo-summary').textContent =
-    `${ocData.length} OC · ${fmtCLP(ocData.reduce((s,o)=>s+o.total,0))} presupuestado`;
+    `${ocFiltradas.length} OC${ocFiltradas.length!==ocData.length?` de ${ocData.length}`:''} · ${fmtCLP(ocFiltradas.reduce((s,o)=>s+o.total,0))} presupuestado`;
 
   // Facturas tabla en dashboard
   const tbody = document.getElementById('dash-fact-tbody');
