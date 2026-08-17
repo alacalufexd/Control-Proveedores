@@ -153,6 +153,11 @@ tbody td strong{color:var(--text);font-weight:600}
 .imp-preview h4{font-size:12px;font-weight:700;color:#065F46;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
 .prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .prev-field{font-size:12px}.prev-field .pl{color:var(--gray-500);font-weight:600}
+.prev-field-edit{font-size:12px;display:flex;flex-direction:column;gap:3px}
+.prev-field-edit label{color:var(--gray-500);font-weight:600;font-size:11px}
+.prev-field-edit input{border:1px solid #BBF7D0;border-radius:5px;padding:6px 8px;font-family:inherit;font-size:12.5px;background:#fff;color:var(--navy);outline:none;width:100%;box-sizing:border-box}
+.prev-field-edit input:focus{border-color:var(--accent)}
+.prev-field-edit input.missing{border-color:var(--gold);background:#FFFBEB}
 
 /* DETAIL FIELDS */
 .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
@@ -397,10 +402,10 @@ tbody td strong{color:var(--text);font-weight:600}
       </div>
       <div class="import-zone" id="import-zone"
         ondragover="handleDragOver(event)" ondragleave="handleDragLeave()" ondrop="handleDrop(event)">
-        <input type="file" accept=".pdf" onchange="handleFileSelect(event)" id="pdf-file-input"/>
+        <input type="file" accept=".pdf,image/*" onchange="handleFileSelect(event)" id="pdf-file-input"/>
         <div class="zi">📄</div>
-        <div class="zt">Arrastra el PDF aquí o haz clic para seleccionar</div>
-        <div class="zs">Archivos OC generados en Manager · Máx 10MB</div>
+        <div class="zt">Arrastra el PDF o una foto aquí, o haz clic para seleccionar</div>
+        <div class="zs">Archivos OC generados en Manager · PDF o foto (JPG/PNG) · Máx 10MB</div>
       </div>
       <div class="imp-loading" id="imp-loading"><div class="spinner"></div><span>Leyendo PDF…</span></div>
       <div class="imp-error" id="imp-error"></div>
@@ -521,14 +526,14 @@ tbody td strong{color:var(--text);font-weight:600}
     </div>
     <div class="modal-body">
       <div class="alert-info" style="margin-bottom:16px;font-size:12px">
-        Sube el PDF de la factura electrónica. Se extraerán automáticamente el N°, proveedor, montos y fecha. Luego debes asociarla a una OC.
+        Sube el PDF o una foto de la factura electrónica. Se extraerán automáticamente el N°, proveedor, montos y fecha — revisa y completa los campos que no se detecten. Luego debes asociarla a una OC.
       </div>
       <div class="import-zone" id="import-fact-zone"
         ondragover="handleFactDragOver(event)" ondragleave="handleFactDragLeave()" ondrop="handleFactDrop(event)">
-        <input type="file" accept=".pdf" onchange="handleFactFileSelect(event)" id="pdf-fact-input"/>
+        <input type="file" accept=".pdf,image/*" onchange="handleFactFileSelect(event)" id="pdf-fact-input"/>
         <div class="zi">🧾</div>
-        <div class="zt">Arrastra el PDF de la factura o haz clic para seleccionar</div>
-        <div class="zs">Factura electrónica en PDF · Máx 10MB</div>
+        <div class="zt">Arrastra el PDF o una foto de la factura, o haz clic para seleccionar</div>
+        <div class="zs">Factura electrónica en PDF o foto (JPG/PNG) · Máx 10MB</div>
       </div>
       <div class="imp-loading" id="imp-fact-loading"><div class="spinner"></div><span>Leyendo factura…</span></div>
       <div class="imp-error" id="imp-fact-error"></div>
@@ -695,14 +700,14 @@ tbody td strong{color:var(--text);font-weight:600}
     </div>
     <div class="modal-body">
       <div class="alert-info" style="margin-bottom:16px;font-size:12px">
-        Sube el PDF de la boleta de honorarios electrónica. Se extraerán N° boleta, profesional, RUT, monto bruto, retención y líquido. Luego debes asociarla a una OC.
+        Sube el PDF o una foto de la boleta de honorarios. Se extraerán N° boleta, profesional, RUT, monto bruto, retención y líquido — revisa y completa los campos que no se detecten. Luego debes asociarla a una OC.
       </div>
       <div class="import-zone" id="import-boleta-zone"
         ondragover="handleBoletaDragOver(event)" ondragleave="handleBoletaDragLeave()" ondrop="handleBoletaDrop(event)">
-        <input type="file" accept=".pdf" onchange="handleBoletaFileSelect(event)" id="pdf-boleta-input"/>
+        <input type="file" accept=".pdf,image/*" onchange="handleBoletaFileSelect(event)" id="pdf-boleta-input"/>
         <div class="zi">📋</div>
-        <div class="zt">Arrastra el PDF de la boleta o haz clic para seleccionar</div>
-        <div class="zs">Boleta de Honorarios Electrónica en PDF · Máx 10MB</div>
+        <div class="zt">Arrastra el PDF o una foto de la boleta, o haz clic para seleccionar</div>
+        <div class="zs">Boleta de Honorarios en PDF o foto (JPG/PNG) · Máx 10MB</div>
       </div>
       <div class="imp-loading" id="imp-boleta-loading"><div class="spinner"></div><span>Leyendo boleta…</span></div>
       <div class="imp-error" id="imp-boleta-error"></div>
@@ -729,6 +734,16 @@ tbody td strong{color:var(--text);font-weight:600}
             <label>Descripción / Glosa (editable)</label>
             <input type="text" id="impb-glosa" placeholder="Descripción del servicio"/>
           </div>
+        </div>
+        <!-- Campo UF: visible si la OC seleccionada es en UF -->
+        <div id="impb-uf-row" style="display:none;margin-top:12px;padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--rs)">
+          <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:8px">⚠️ OC en UF — ingresa el monto en UF cobrado en esta boleta</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="impb-valor-uf" placeholder="ej: 61.6" step="0.0001"
+              style="padding:7px 10px;border:1px solid #FDE68A;border-radius:var(--rs);font-family:inherit;font-size:13px;width:150px;background:#FFFDE7;color:#78350F;outline:none"
+              oninput="updateImpbSaldo()"/>
+          </div>
+          <div style="font-size:11px;color:#92400E;margin-top:6px">Este monto se descuenta directamente del saldo UF de la OC — no afecta los montos en pesos de la boleta.</div>
         </div>
         <div id="impb-saldo-wrap" style="display:none;margin-top:12px">
           <div class="bbar-wrap">
@@ -1836,6 +1851,30 @@ async function extractPdfText(pdf, onStatus) {
   return { text: ocrText, ocr: true };
 }
 
+// Extrae texto desde un PDF o desde una foto (jpg/png/etc).
+// - PDF con texto real → lo usa directo.
+// - PDF escaneado (sin texto) → OCR de cada página.
+// - Foto (imagen) → OCR directo de la imagen.
+// Se usa en los 3 importadores (OC, Factura, Boleta).
+async function extractTextFromFile(file, onStatus) {
+  if (file.type === 'application/pdf') {
+    await loadPdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    return await extractPdfText(pdf, onStatus);
+  }
+  if (file.type.startsWith('image/')) {
+    if (onStatus) onStatus('📷 Leyendo la foto con OCR, puede tardar unos segundos…');
+    await loadTesseract();
+    const { data } = await Tesseract.recognize(file, 'spa');
+    return { text: data.text, ocr: true };
+  }
+  throw new Error('Formato no soportado. Usa PDF, JPG o PNG.');
+}
+function isImportableFile(f) {
+  return !!f && (f.type === 'application/pdf' || f.type.startsWith('image/'));
+}
+
 function openImportModal() {
   importedOCData = null;
   const fi = document.getElementById('pdf-file-input'); if(fi) fi.value='';
@@ -1850,33 +1889,29 @@ function handleDragLeave()  { document.getElementById('import-zone').classList.r
 function handleDrop(e) {
   e.preventDefault(); handleDragLeave();
   const f = e.dataTransfer.files[0];
-  if (f && f.type==='application/pdf') processPDF(f);
-  else showImpError('Solo se aceptan archivos PDF.');
+  if (isImportableFile(f)) processPDF(f);
+  else showImpError('Solo se aceptan archivos PDF o fotos (JPG/PNG).');
 }
 function handleFileSelect(e) { const f = e.target.files[0]; if(f) processPDF(f); }
 
 async function processPDF(file) {
   if (file.size > 10*1024*1024) { showImpError('Archivo supera 10MB.'); return; }
-  document.getElementById('imp-loading').classList.add('show');
+  const loadingEl = document.getElementById('imp-loading');
+  const loadingSpan = loadingEl.querySelector('span');
+  loadingEl.classList.add('show');
   document.getElementById('imp-error').classList.remove('show');
   document.getElementById('imp-preview').classList.remove('show');
   try {
-    await loadPdfJs();
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    let text = '';
-    for (let p=1; p<=pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      text += content.items.map(i=>i.str).join(' ') + '\n';
-    }
-    console.log('[PDF]', text);
+    const { text, ocr } = await extractTextFromFile(file, msg => { if (loadingSpan) loadingSpan.textContent = msg; });
+    console.log('[PDF OC]', ocr ? '(vía OCR)' : '(texto nativo)', text);
     importedOCData = parseManagerOC(text);
     showImpPreview(importedOCData);
+    if (ocr) notify('⚠️ No se detectó texto nativo — se usó OCR. Revisa bien los datos antes de guardar.', 'warning');
   } catch(err) {
-    showImpError('Error leyendo PDF: ' + err.message);
+    showImpError('Error leyendo archivo: ' + err.message);
   } finally {
-    document.getElementById('imp-loading').classList.remove('show');
+    loadingEl.classList.remove('show');
+    if (loadingSpan) loadingSpan.textContent = 'Leyendo PDF…';
   }
 }
 
@@ -1900,8 +1935,8 @@ function parseManagerOC(text) {
   }
 
   // ── N° OC ──
-  const nocManager = first(/Orden de Compra\s*N[°oº]?\s*(\d+)/i)
-                  || first(/OC\s*N[°oº]?\s*(\d+)/i);
+  const nocManager = first(/Orden de Compra\s*N[°oº?]?\s*(\d+)/i)
+                  || first(/OC\s*N[°oº?]?\s*(\d+)/i);
 
   // ── Fecha documento ──
   let fecha = '';
@@ -2070,6 +2105,8 @@ function openImportFactModal() {
   document.getElementById('imp-fact-extra').style.display = 'none';
   document.getElementById('impf-btn-save').style.display = 'none';
   document.getElementById('impf-saldo-wrap').style.display = 'none';
+  document.getElementById('impf-uf-row').style.display = 'none';
+  document.getElementById('impf-valor-uf').value = '';
   document.getElementById('impf-proveedor').value = '';
   // El selector de OC se llena DESPUÉS de parsear el PDF (filtrado por proveedor)
   const sel = document.getElementById('impf-oc');
@@ -2083,35 +2120,31 @@ function handleFactDragLeave()  { document.getElementById('import-fact-zone').cl
 function handleFactDrop(e) {
   e.preventDefault(); handleFactDragLeave();
   const f = e.dataTransfer.files[0];
-  if (f && f.type==='application/pdf') processFactPDF(f);
-  else showImpFactError('Solo se aceptan archivos PDF.');
+  if (isImportableFile(f)) processFactPDF(f);
+  else showImpFactError('Solo se aceptan archivos PDF o fotos (JPG/PNG).');
 }
 function handleFactFileSelect(e) { const f = e.target.files[0]; if(f) processFactPDF(f); }
 
 async function processFactPDF(file) {
   if (file.size > 10*1024*1024) { showImpFactError('Archivo supera 10MB.'); return; }
-  document.getElementById('imp-fact-loading').classList.add('show');
+  const loadingEl = document.getElementById('imp-fact-loading');
+  const loadingSpan = loadingEl.querySelector('span');
+  loadingEl.classList.add('show');
   document.getElementById('imp-fact-error').classList.remove('show');
   document.getElementById('imp-fact-preview').classList.remove('show');
   document.getElementById('imp-fact-extra').style.display = 'none';
   document.getElementById('impf-btn-save').style.display = 'none';
   try {
-    await loadPdfJs();
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    let text = '';
-    for (let p=1; p<=pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      text += content.items.map(i=>i.str).join(' ') + '\n';
-    }
-    console.log('[FACT PDF]', text);
+    const { text, ocr } = await extractTextFromFile(file, msg => { if (loadingSpan) loadingSpan.textContent = msg; });
+    console.log('[FACT PDF]', ocr ? '(vía OCR)' : '(texto nativo)', text);
     importedFactData = parseFacturaPDF(text);
     showImpFactPreview(importedFactData);
+    if (ocr) notify('⚠️ No se detectó texto nativo — se usó OCR. Revisa bien los datos antes de guardar.', 'warning');
   } catch(err) {
-    showImpFactError('Error leyendo PDF: ' + err.message);
+    showImpFactError('Error leyendo archivo: ' + err.message);
   } finally {
-    document.getElementById('imp-fact-loading').classList.remove('show');
+    loadingEl.classList.remove('show');
+    if (loadingSpan) loadingSpan.textContent = 'Leyendo factura…';
   }
 }
 
@@ -2127,9 +2160,18 @@ function parseFacturaPDF(text) {
 
   // ── N° Factura ──
   // Formatos: "Nº 207", "N° 207", "Factura Electrónica Nº 207", "Nro. 207"
-  const numFact = first(/FACTURA\s+ELECTR[ÓO]NICA\s+N[°oº]?\s*\.?\s*(\d+)/i)
-               || first(/N[°oº]\s*\.?\s*(\d+)/i)
-               || first(/Nro\.?\s*(\d+)/i);
+  // Ojo: en muchas facturas el "R.U.T. N° ..." del emisor aparece ANTES del
+  // N° de factura real (el orden de texto del PDF no sigue el orden visual),
+  // así que se descarta cualquier "N°" que venga pegado a "R.U.T."
+  let numFact = first(/FACTURA\s+ELECTR[ÓO]NICA\s+N[°oº?]?\s*\.?\s*(\d+)/i);
+  if (!numFact) {
+    const allNumM = [...text.matchAll(/N[°oº?]\s*\.?\s*(\d+)/gi)];
+    for (const m of allNumM) {
+      const ctx = text.slice(Math.max(0, m.index-15), m.index);
+      if (!/R\.?U\.?T\.?\s*$/i.test(ctx)) { numFact = m[1]; break; }
+    }
+  }
+  numFact = numFact || first(/Nro\.?\s*(\d+)/i);
 
   // ── Fecha emisión ──
   let fechaEmision = '';
@@ -2145,24 +2187,32 @@ function parseFacturaPDF(text) {
     if (fd) { const p=fd.split(/[\/\-]/); if(p.length===3 && p[2].length===4) fechaEmision=`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; }
   }
 
-  // ── Emisor (proveedor que emite la factura) ──
-  // Primera línea grande en mayúsculas antes de "FACTURA ELECTRÓNICA"
-  const emisorM = text.match(/^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,60}(?:SPA|LTDA|S\.A\.|SA|SpA|EIRL))/im)
-               || text.match(/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,50}(?:SPA|LTDA|SA|SpA|EIRL))/i);
-  const emisor = emisorM ? emisorM[1].trim() : '';
-
   // ── RUT Emisor y Receptor ──
-  // El RUT de referencia (esquina sup. derecha de la factura electrónica chilena)
-  // aparece sin etiqueta — es el primer número de RUT del documento.
-  const rutRefFactM = text.match(/(?<![:\-]\s{0,4})([\d]{1,2}\.[\d]{3}\.[\d]{3}-[\dkK])/);
-  const rutRefFact  = rutRefFactM?.[1] || '';
-  const allRuts = [...text.matchAll(/R\.?U\.?T\.?\s*[:\-]?\s*([\d\.]{7,12}-[\dkK])/gi)];
-  // rutEmisor: prioriza el RUT de referencia del encabezado; si no, el primero con etiqueta
-  const rutEmisor = rutRefFact || allRuts[0]?.[1] || '';
+  // En muchas facturas el orden del texto extraído no respeta el layout visual
+  // (la etiqueta "R.U.T." puede aparecer ANTES o DESPUÉS del número, o lejos de
+  // él). Por eso, en vez de depender de la etiqueta, se toman los RUT con forma
+  // válida en el orden en que aparecen: el primero es del emisor (esquina
+  // superior del documento) y el segundo distinto es del receptor.
+  const rutsEnOrden = [...new Set([...text.matchAll(/\b(\d{1,2}\.\d{3}\.\d{3}-[\dkK])\b/gi)].map(m=>m[1]))];
+  const rutEmisor   = rutsEnOrden[0] || '';
+  const rutReceptor = rutsEnOrden[1] || '';
 
   // ── Receptor (empresa a quien se factura) ──
-  const receptor = first(/Se[ñn]or\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][^\n\r\$]{3,60}?)(?:\s{2,}|R\.U\.T|$)/i);
-  const rutReceptor  = allRuts[1]?.[1] || '';
+  // Se ancla al sufijo legal (SPA/LTDA/S.A./EIRL) porque el texto entre
+  // "Señor(es):" y el resto de los datos suele venir sin separadores claros.
+  const receptorM = text.match(/Se[ñn]or(?:es)?\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.]{2,60}?(?:SPA|LTDA|S\.A\.|SA|SpA|EIRL))/i)
+                 || text.match(/Se[ñn]or\s*(?:\(es\))?\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][^\n\r\$]{3,60}?)(?:\s{2,}|R\.U\.T|$)/i);
+  const receptor = receptorM ? receptorM[1].trim().replace(/\s+/g,' ') : '';
+
+  // ── Emisor (proveedor que emite la factura) ──
+  // El orden de texto de algunos PDF pone el bloque del receptor ANTES que el
+  // del emisor, así que no basta con tomar la primera razón social del
+  // documento: se buscan TODAS las razones sociales y se descarta la que ya
+  // se identificó como receptor.
+  const empresasEncontradas = [...new Set(
+    [...text.matchAll(/[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\.]{2,60}?(?:SPA|LTDA|S\.A\.|SA|SpA|EIRL)/g)].map(m => m[0].trim())
+  )];
+  const emisor = empresasEncontradas.find(c => c.toUpperCase() !== receptor.toUpperCase()) || empresasEncontradas[0] || '';
 
   // ── Montos ──
   const neto  = parseMonto(first(/Monto\s+Neto\s*\$?\s*([\d\.\,]+)/i)  || first(/Neto\s*[:\$]\s*([\d\.\,]+)/i));
@@ -2170,10 +2220,16 @@ function parseFacturaPDF(text) {
   const total = parseMonto(first(/Monto\s+Total\s*\$?\s*([\d\.\,]+)/i)  || first(/Total\s*\$?\s*([\d\.\,]+)/i)) || neto+iva;
 
   // ── Descripción / Glosa ──
-  // Buscar la descripción del ítem principal
-  const glosa = first(/Descripci[oó]n\s+([A-Za-záéíóúñÁÉÍÓÚÑ][^\n\r]{10,120})/i)
-             || first(/SERCOMP\w*\s+([^\n\r]{10,120})/i)
-             || first(/([A-ZÁÉÍÓÚÑ][a-záéíóúñ][^\n\r]{15,100}(?:servicio|trabajo|honorario|consultor|implementa|capacita)[^\n\r]{0,60})/i);
+  // Buscar la descripción del ítem principal. Se descarta si lo capturado es
+  // en realidad un encabezado de tabla (CANTIDAD, DESCRIPCIÓN, TOTAL, etc.)
+  // producto del desorden de texto de algunos PDF — mejor dejarlo vacío para
+  // que el usuario lo complete que mostrar basura.
+  let glosaRaw = first(/(Estado\s+de\s+Pago[^\n\r]{0,150}?)(?:\s+\d+[.,]\d{2}\s|$)/i)
+              || first(/Descripci[oó]n\s+([A-Za-záéíóúñÁÉÍÓÚÑ][^\n\r]{10,120})/i)
+              || first(/SERCOMP\w*\s+([^\n\r]{10,120})/i)
+              || first(/([A-ZÁÉÍÓÚÑ][a-záéíóúñ][^\n\r]{15,100}(?:servicio|trabajo|honorario|consultor|implementa|capacita)[^\n\r]{0,60})/i);
+  const glosaEsBasura = glosaRaw && /^(CANTIDAD|DESCRIPCI[ÓO]N|PRECIO|DESCUENTO|TOTAL|MONTO|SON\s*:)/i.test(glosaRaw.trim());
+  const glosa = glosaEsBasura ? '' : (glosaRaw || '');
 
   // ── Fecha vencimiento ──
   let fechaVenc = '';
@@ -2707,6 +2763,8 @@ function openImportBoletaModal() {
   document.getElementById('imp-boleta-extra').style.display = 'none';
   document.getElementById('impb-btn-save').style.display = 'none';
   document.getElementById('impb-saldo-wrap').style.display = 'none';
+  document.getElementById('impb-uf-row').style.display = 'none';
+  document.getElementById('impb-valor-uf').value = '';
   document.getElementById('impb-proveedor').value = '';
   document.getElementById('impb-oc').innerHTML = '<option value="">— Selecciona una OC —</option>';
   document.getElementById('modal-import-boleta').classList.add('open');
@@ -2717,8 +2775,8 @@ function handleBoletaDragLeave()  { document.getElementById('import-boleta-zone'
 function handleBoletaDrop(e) {
   e.preventDefault(); handleBoletaDragLeave();
   const f = e.dataTransfer.files[0];
-  if (f && f.type==='application/pdf') processBoletaPDF(f);
-  else { const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Solo se aceptan archivos PDF.'; el.classList.add('show'); }
+  if (isImportableFile(f)) processBoletaPDF(f);
+  else { const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Solo se aceptan archivos PDF o fotos (JPG/PNG).'; el.classList.add('show'); }
 }
 function handleBoletaFileSelect(e) { const f = e.target.files[0]; if(f) processBoletaPDF(f); }
 
@@ -2732,16 +2790,13 @@ async function processBoletaPDF(file) {
   document.getElementById('imp-boleta-error').classList.remove('show');
   document.getElementById('imp-boleta-preview').classList.remove('show');
   try {
-    await loadPdfJs();
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    const { text, ocr } = await extractPdfText(pdf, msg => { if (loadingSpan) loadingSpan.textContent = msg; });
+    const { text, ocr } = await extractTextFromFile(file, msg => { if (loadingSpan) loadingSpan.textContent = msg; });
     console.log('[BOLETA PDF]', ocr ? '(extraído vía OCR)' : '(texto nativo)', text);
     importedBoletaData = parseBoletaPDF(text);
     showImportBoletaPreview(importedBoletaData);
-    if (ocr) notify('⚠️ Esta boleta es un PDF escaneado (sin texto). Se usó OCR para leerla — revisa bien los datos antes de guardar.', 'warning');
+    if (ocr) notify('⚠️ No se detectó texto nativo — se usó OCR. Revisa bien los datos antes de guardar.', 'warning');
   } catch(err) {
-    const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Error leyendo PDF: '+err.message; el.classList.add('show');
+    const el=document.getElementById('imp-boleta-error'); el.textContent='⚠️ Error leyendo archivo: '+err.message; el.classList.add('show');
   } finally {
     loadingEl.classList.remove('show');
     if (loadingSpan) loadingSpan.textContent = 'Leyendo boleta…';
@@ -2761,8 +2816,8 @@ function parseBoletaPDF(text) {
   }
 
   // N° Boleta — acepta "N ° 24", "N°24", "N° 24", "Nº 24", con o sin espacio
-  const numBoleta = first(/Boleta[^<]{0,60}N\s*[°oº.]\s*°?\s*(\d+)/i)
-                 || first(/N\s*[°oº.]\s*°?\s*(\d+)/i);
+  const numBoleta = first(/Boleta[^<]{0,60}N\s*[°oº.?]\s*[°?]?\s*(\d+)/i)
+                 || first(/N\s*[°oº.?]\s*[°?]?\s*(\d+)/i);
 
   // Fecha emisión — acepta "25 de Junio de 2026" Y "25 Junio 2026"
   const mesesES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
@@ -2870,21 +2925,45 @@ function showImportBoletaPreview(d) {
       const s=saldoOC(oc);
       return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${oc.isUF?'UF '+fmtUF(s.ufSaldo):fmtCLP(s.saldo)}</option>`;
     }).join('');
-  sel.onchange = () => {
-    const oc = ocData.find(o=>o.noc===sel.value);
-    if (!oc) { document.getElementById('impb-saldo-wrap').style.display='none'; return; }
-    const s=saldoOC(oc);
-    const usado=facturadoByOC(oc.noc), nuevo=usado+d.liquido;
+  sel.onchange = updateImpbSaldo;
+  document.getElementById('impb-btn-save').style.display = 'inline-flex';
+}
+
+function updateImpbSaldo() {
+  const d = importedBoletaData;
+  const ocId = document.getElementById('impb-oc').value;
+  const oc = ocData.find(o => o.noc === ocId);
+
+  // Mostrar/ocultar el campo de monto UF según corresponda
+  const ufRow = document.getElementById('impb-uf-row');
+  if (ufRow) ufRow.style.display = oc?.isUF ? 'block' : 'none';
+
+  if (!oc || !d) { document.getElementById('impb-saldo-wrap').style.display='none'; return; }
+  document.getElementById('impb-saldo-wrap').style.display = 'block';
+
+  if (oc.isUF) {
+    const ufBoleta = parseFloat(document.getElementById('impb-valor-uf')?.value)||0;
+    const ufUsado  = facturadoByOCenUF(ocId);
+    const ufNuevo  = ufUsado + ufBoleta;
+    const pct      = oc.total>0 ? Math.min(ufNuevo/oc.total*100,100) : 0;
+    const over     = ufNuevo > oc.total;
+    document.getElementById('impb-saldo-label').textContent = `OC ${oc.noc} (UF) — Total: UF ${fmtUF(oc.total)}`;
+    document.getElementById('impb-saldo-pct').textContent   = ufBoleta>0 ? `${pct.toFixed(1)}% utilizado` : 'Ingresa el monto UF';
+    document.getElementById('impb-saldo-fill').style.width  = pct+'%';
+    document.getElementById('impb-saldo-fill').className    = `bbar-fill ${over?'over':pct>80?'warn':''}`;
+    document.getElementById('impb-saldo-sub').textContent   = ufBoleta>0
+      ? (over ? `⚠️ Excede en UF ${fmtUF(ufNuevo-oc.total)}` : `Saldo: UF ${fmtUF(oc.total-ufNuevo)} · Esta boleta = UF ${fmtUF(ufBoleta)}`)
+      : 'Ingresa el monto UF cobrado en la boleta para ver el saldo';
+  } else {
+    const usado=facturadoByOC(oc.noc), nuevo=usado+(d.liquido||0);
     const pct=oc.total>0?Math.min(nuevo/oc.total*100,100):0;
     const over=nuevo>oc.total;
-    document.getElementById('impb-saldo-wrap').style.display='block';
     document.getElementById('impb-saldo-label').textContent=`OC ${oc.noc} — Total: ${fmtCLP(oc.total)}`;
     document.getElementById('impb-saldo-pct').textContent=`${pct.toFixed(1)}% utilizado`;
     document.getElementById('impb-saldo-fill').style.width=pct+'%';
     document.getElementById('impb-saldo-fill').className=`bbar-fill ${over?'over':pct>80?'warn':''}`;
     document.getElementById('impb-saldo-sub').textContent=over?`⚠️ Excede en ${fmtCLP(nuevo-oc.total)}`:`Saldo tras esta boleta: ${fmtCLP(oc.total-nuevo)}`;
-  };
-  document.getElementById('impb-btn-save').style.display = 'inline-flex';
+  }
 }
 
 async function saveImportedBoleta() {
@@ -2898,13 +2977,24 @@ async function saveImportedBoleta() {
   if (!ocId)        { notify('Debes seleccionar la OC asociada.','error'); return; }
   const dupFact = factData.find(f => f.num===d.numBoleta && f.proveedor?.toLowerCase()===proveedorFinal.toLowerCase());
   if (dupFact) { notify(`⚠️ Ya existe la boleta N°${d.numBoleta} de "${proveedorFinal}" (${dupFact.id}).`,'error'); return; }
+
+  const oc = ocData.find(o => o.noc === ocId);
+
+  // Para OC en UF se requiere el monto UF cobrado en la boleta
+  let valorUF = 0;
+  if (oc?.isUF) {
+    const impbUFEl = document.getElementById('impb-valor-uf');
+    valorUF = impbUFEl ? parseFloat(impbUFEl.value)||0 : 0;
+    if (!valorUF) { notify('Esta OC es en UF. Ingresa el monto en UF cobrado en esta boleta.','error'); return; }
+  }
+
   const fact = {
     id: getNextFactNum(), num: d.numBoleta, ocId,
     proveedor: proveedorFinal, rutProveedor: d.rutEmisor||'',
     receptor: d.receptor||'', rutReceptor: d.rutReceptor||'',
     glosa: glosa||'', fechaIngreso: d.fechaEmision||new Date().toISOString().split('T')[0],
     fechaVenc:'', formaPago:'Honorarios',
-    neto: d.liquido, iva:0, total: d.liquido, valorUF:0,
+    neto: d.liquido, iva:0, total: d.liquido, valorUF,
     mailAprov: mail, estado:'ingresada',
     fechaAprobacion:null, aprobo:null, origenPDF:true,
     createdAt: new Date().toISOString(),
@@ -3116,6 +3206,30 @@ function closeModal(id) { document.getElementById(id)?.classList.remove('open');
 function fmtCLP(n) { return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(n||0); }
 function fmtUF(n)  { return new Intl.NumberFormat('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0); }
 function fmt(d) { if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+// Convierte un monto tecleado a mano (con o sin formato chileno de miles) a número.
+function parseMontoEditado(v) {
+  if (v===null || v===undefined || v==='') return 0;
+  let c = String(v).replace(/\$/g,'').replace(/\s/g,'').trim();
+  if (!c) return 0;
+  if (c.includes(',')) c = c.replace(/\./g,'').replace(',','.');
+  else if ((c.match(/\./g)||[]).length > 1) c = c.replace(/\./g,'');
+  return Math.round(parseFloat(c)) || 0;
+}
+// Construye una grilla de campos editables (label + input) para revisar/corregir
+// datos extraídos de un PDF o foto. Los campos no detectados quedan vacíos para
+// que el usuario los complete a mano.
+function buildEditableFieldsHTML(fields) {
+  return fields.map(f => {
+    const val = (f.value===undefined||f.value===null) ? '' : String(f.value);
+    const missing = !val && f.type !== 'money0ok';
+    return `<div class="prev-field-edit">
+      <label for="${f.id}">${f.label}</label>
+      <input type="${f.htmlType||'text'}" id="${f.id}" value="${val.replace(/"/g,'&quot;')}"
+        placeholder="${missing ? '⚠️ No detectado — complétalo' : ''}"
+        class="${missing ? 'missing' : ''}"/>
+    </div>`;
+  }).join('');
+}
 function badgeFact(e) {
   return { ingresada:'badge badge-ingresada', 'en aprobación':'badge badge-en-aprobacion', aprobada:'badge badge-aprobada', rechazada:'badge badge-rechazada' }[e] || 'badge badge-ingresada';
 }
