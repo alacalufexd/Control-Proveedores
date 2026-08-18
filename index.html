@@ -583,7 +583,8 @@ tbody td strong{color:var(--text);font-weight:600}
         <div class="form-grid">
           <div class="form-group form-full">
             <label>Emisor / Proveedor <span style="font-size:10px;color:var(--accent);font-weight:600">— edita si el nombre detectado no es correcto</span></label>
-            <input type="text" id="impf-proveedor" placeholder="Razón social del proveedor" style="border-color:var(--accent)"/>
+            <input type="text" id="impf-proveedor" placeholder="Razón social del proveedor" style="border-color:var(--accent)"
+              oninput="fillImpfOCSelect(importedFactData?.rutEmisor||'', this.value)"/>
           </div>
           <div class="form-group">
             <label>OC Asociada *</label>
@@ -766,7 +767,8 @@ tbody td strong{color:var(--text);font-weight:600}
         <div class="form-grid">
           <div class="form-group form-full">
             <label>Profesional / Emisor <span style="font-size:10px;color:var(--accent);font-weight:600">— edita si es necesario</span></label>
-            <input type="text" id="impb-proveedor" placeholder="Nombre del profesional" style="border-color:var(--accent)"/>
+            <input type="text" id="impb-proveedor" placeholder="Nombre del profesional" style="border-color:var(--accent)"
+              oninput="fillImpbOCSelect(importedBoletaData?.rutEmisor||'', this.value)"/>
           </div>
           <div class="form-group">
             <label>OC Asociada *</label>
@@ -1179,12 +1181,42 @@ async function loadAllData() {
   }
 }
 
+// ── Resiliencia ante columnas de SharePoint que aún no existen ──
+// Si Graph responde "Field 'X' is not recognized" (columna no creada todavía
+// en la lista), se reintenta el guardado quitando ese campo del payload, en
+// vez de bloquear TODO el guardado (incluidos datos que no dependen de esa
+// columna). Se avisa una sola vez por campo para no spamear al usuario.
+function extractUnknownField(errMsg) {
+  const m = (errMsg||'').match(/Field '([^']+)' is not recognized/i);
+  return m ? m[1] : null;
+}
+const _warnedMissingFields = new Set();
+async function graphWriteResilient(writeFn, url, body, listLabel) {
+  for (let intento = 0; intento < 8; intento++) {
+    try {
+      return await writeFn(url, body);
+    } catch (e) {
+      const campo = extractUnknownField(e.message);
+      if (campo && body.fields && (campo in body.fields)) {
+        delete body.fields[campo];
+        if (!_warnedMissingFields.has(campo)) {
+          _warnedMissingFields.add(campo);
+          notify(`⚠️ La columna "${campo}" aún no existe en la lista de SharePoint (${listLabel}). Ese dato no se guardará hasta que se agregue esa columna — el resto de la información sí se guardó bien.`, 'warning');
+        }
+        continue; // reintenta sin ese campo
+      }
+      throw e; // otro tipo de error: no lo ocultamos
+    }
+  }
+  throw new Error('Demasiados campos no reconocidos por SharePoint al guardar.');
+}
+
 async function saveOCToGraph(oc) {
   try {
     if (oc._spId) {
-      await graphPatch(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items/${oc._spId}`, ocToFields(oc));
+      await graphWriteResilient(graphPatch, `${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items/${oc._spId}`, ocToFields(oc), 'OC_Control');
     } else {
-      const created = await graphPost(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items`, ocToFields(oc));
+      const created = await graphWriteResilient(graphPost, `${GRAPH_BASE}/lists/${GRAPH_CONFIG.listOC}/items`, ocToFields(oc), 'OC_Control');
       oc._spId = created.id;
     }
   } catch (e) { notify('Error guardando OC: ' + e.message, 'error'); throw e; }
@@ -1198,9 +1230,9 @@ async function deleteOCFromGraph(oc) {
 async function saveFactToGraph(fact) {
   try {
     if (fact._spId) {
-      await graphPatch(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items/${fact._spId}`, factToFields(fact));
+      await graphWriteResilient(graphPatch, `${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items/${fact._spId}`, factToFields(fact), 'Facturas_Control');
     } else {
-      const created = await graphPost(`${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items`, factToFields(fact));
+      const created = await graphWriteResilient(graphPost, `${GRAPH_BASE}/lists/${GRAPH_CONFIG.listFacturas}/items`, factToFields(fact), 'Facturas_Control');
       fact._spId = created.id;
     }
   } catch (e) { notify('Error guardando Factura: ' + e.message, 'error'); throw e; }
@@ -2517,18 +2549,19 @@ function fillImpfOCSelect(rutEmisor, nombreEmisor) {
       palabras.some(p => (oc.proveedor||'').toLowerCase().includes(p))
     );
   }
-  // Si aún no hay match, muestra todas con saldo (no bloquea el flujo)
-  const usandoTodas = !ocFiltradas.length;
-  if (usandoTodas) ocFiltradas = ocConSaldo;
-  sel.innerHTML = (usandoTodas
-    ? '<option value="" disabled style="color:var(--gold)">⚠️ No se encontraron OC de este proveedor — mostrando todas</option>'
-    : `<option value="">— OC de ${nombreEmisor||'este proveedor'} con saldo —</option>`) +
+  // Si no hay match, NO se muestran todas las OC — solo las del proveedor correcto
+  if (!ocFiltradas.length) {
+    sel.innerHTML = `<option value="" disabled selected style="color:var(--gold)">⚠️ No se encontraron OC de "${nombreEmisor||'este proveedor'}" — corrige el nombre arriba</option>`;
+    sel.onchange = updateImpfSaldo;
+    updateImpfSaldo();
+    return;
+  }
+  sel.innerHTML = `<option value="">— OC de ${nombreEmisor||'este proveedor'} con saldo —</option>` +
     ocFiltradas.map(oc => {
       const s = saldoOC(oc);
       const saldoStr = fmtOCMonto(oc, s.isUSD ? s.usdSaldo : s.isUF ? s.ufSaldo : s.saldo);
       return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
     }).join('');
-  if (usandoTodas) sel.selectedIndex = 0;
   sel.onchange = updateImpfSaldo;
 }
 
@@ -3163,21 +3196,35 @@ function showImportBoletaPreview(d) {
   document.getElementById('imp-boleta-extra').style.display = 'block';
   document.getElementById('impb-proveedor').value = d.profesional || '';
   document.getElementById('impb-glosa').value = `Boleta honorarios N°${d.numBoleta||''}`;
-  // Selector OC filtrado por RUT del profesional
+  fillImpbOCSelect(d.rutEmisor || '', d.profesional || '');
+  document.getElementById('impb-btn-save').style.display = 'inline-flex';
+}
+
+function fillImpbOCSelect(rutEmisor, nombreProfesional) {
+  const sel = document.getElementById('impb-oc');
   const rutNorm = (r) => (r||'').replace(/[\.\-\s]/g,'').toLowerCase();
   const ocConSaldo = ocData.filter(oc => ocTieneSaldo(oc));
-  const rutB = rutNorm(d.rutEmisor);
+  const rutB = rutNorm(rutEmisor);
   let ocFilt = rutB ? ocConSaldo.filter(oc => rutNorm(oc.provRut)===rutB) : [];
-  if (!ocFilt.length) ocFilt = ocConSaldo;
-  const sel = document.getElementById('impb-oc');
-  sel.innerHTML = `<option value="">— OC de ${d.profesional||'este profesional'} —</option>` +
+  // Si no hay match por RUT, intenta match parcial por nombre (3+ letras)
+  if (!ocFilt.length && nombreProfesional) {
+    const palabras = nombreProfesional.toLowerCase().split(/\s+/).filter(p => p.length > 2);
+    ocFilt = ocConSaldo.filter(oc => palabras.some(p => (oc.proveedor||'').toLowerCase().includes(p)));
+  }
+  // Sin match → NO se muestran todas las OC, solo las del profesional correcto
+  if (!ocFilt.length) {
+    sel.innerHTML = `<option value="" disabled selected style="color:var(--gold)">⚠️ No se encontraron OC de "${nombreProfesional||'este profesional'}" — corrige el nombre arriba</option>`;
+    sel.onchange = updateImpbSaldo;
+    updateImpbSaldo();
+    return;
+  }
+  sel.innerHTML = `<option value="">— OC de ${nombreProfesional||'este profesional'} —</option>` +
     ocFilt.map(oc => {
       const s=saldoOC(oc);
       const saldoStr = fmtOCMonto(oc, s.isUSD ? s.usdSaldo : s.isUF ? s.ufSaldo : s.saldo);
       return `<option value="${oc.noc}">${oc.noc}${oc.nocManager?' (M°'+oc.nocManager+')':''} — ${oc.proveedor} — Saldo: ${saldoStr}</option>`;
     }).join('');
   sel.onchange = updateImpbSaldo;
-  document.getElementById('impb-btn-save').style.display = 'inline-flex';
 }
 
 function updateImpbSaldo() {
@@ -3427,14 +3474,20 @@ function openEditFact(id) {
   ];
   let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando ${f.formaPago==='Honorarios'?'Boleta':'Factura'} <strong>N°${f.num}</strong></div>`;
 
-  // Selector de OC Asociada — permite corregir si se asoció a la OC equivocada
-  const ocOptions = [...ocData]
+  // Selector de OC Asociada — permite corregir si se asoció a la OC equivocada.
+  // Solo muestra OC del MISMO proveedor que la factura (evita reasignar a cualquier OC).
+  const provFact = (f.proveedor||'').trim().toLowerCase();
+  let ocMismoProv = ocData.filter(o => (o.proveedor||'').trim().toLowerCase() === provFact);
+  // Aseguramos que la OC actual siempre esté en la lista, aunque el nombre no calce exacto
+  if (!ocMismoProv.some(o => o.noc === f.ocId) && oc) ocMismoProv.push(oc);
+  const ocOptions = ocMismoProv
     .sort((a,b) => a.noc < b.noc ? 1 : -1)
     .map(o => `<option value="${o.noc}" ${o.noc===f.ocId?'selected':''}>${o.noc}${o.nocManager?' (M°'+o.nocManager+')':''} — ${o.proveedor||'—'} ${ocMonedaBadge(o)?'· '+(o.isUSD?'USD':o.isUF?'UF':'$'):''}</option>`)
     .join('');
   html += `<div class="form-group form-full" style="margin-bottom:14px">
-    <label>OC Asociada <span style="font-size:10px;color:var(--accent);font-weight:600">— cámbiala si se asoció a la OC equivocada</span></label>
+    <label>OC Asociada <span style="font-size:10px;color:var(--accent);font-weight:600">— cámbiala si se asoció a la OC equivocada (solo OC del mismo proveedor)</span></label>
     <select id="edit-f-ocId" style="width:100%;border-color:var(--accent)">${ocOptions}</select>
+    ${ocMismoProv.length<=1 ? '<div style="font-size:11px;color:var(--gray-400);margin-top:4px">No hay otras OC de este proveedor. Si el proveedor está mal escrito, corrígelo abajo y vuelve a abrir este modal.</div>' : ''}
   </div>`;
 
   if (oc?.isUF)  html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El monto UF de la factura es requerido para el cálculo de saldo.</div>`;
