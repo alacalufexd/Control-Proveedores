@@ -1797,6 +1797,11 @@ function openFactDetail(id) {
   // Actions
   const acts = document.getElementById('fdet-actions');
   acts.innerHTML = '';
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-secondary';
+  editBtn.textContent = '✏️ Editar / Reasignar OC';
+  editBtn.onclick = () => { closeModal('modal-fact-detail'); openEditFact(id); };
+  acts.appendChild(editBtn);
   if (f.estado === 'ingresada') {
     const btn = document.createElement('button');
     btn.className = 'btn btn-gold';
@@ -1969,6 +1974,7 @@ function openOCDetail(noc) {
               <span class="${badgeFact(f.estado)}">${f.estado}</span>
               <strong>${fmtCLP(f.total)}</strong>
               <button class="btn btn-secondary btn-sm" onclick="openFactDetail('${f.id}')">Ver</button>
+              <button class="btn btn-secondary btn-sm" onclick="openEditFact('${f.id}')" title="Editar / Reasignar a otra OC">✏️</button>
             </div>
           </div>`;
       }).join('')
@@ -3419,7 +3425,18 @@ function openEditFact(id) {
     ...(oc?.isUF  ? [{ label:'Monto UF de la factura',  key:'valorUF',  val:f.valorUF||'',  type:'number' }] : []),
     ...(oc?.isUSD ? [{ label:'Monto USD de la factura', key:'valorUSD', val:f.valorUSD||'', type:'number' }] : []),
   ];
-  let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando Factura <strong>N°${f.num}</strong></div>`;
+  let html = `<div style="margin-bottom:14px;font-size:13px;color:var(--gray-500)">Editando ${f.formaPago==='Honorarios'?'Boleta':'Factura'} <strong>N°${f.num}</strong></div>`;
+
+  // Selector de OC Asociada — permite corregir si se asoció a la OC equivocada
+  const ocOptions = [...ocData]
+    .sort((a,b) => a.noc < b.noc ? 1 : -1)
+    .map(o => `<option value="${o.noc}" ${o.noc===f.ocId?'selected':''}>${o.noc}${o.nocManager?' (M°'+o.nocManager+')':''} — ${o.proveedor||'—'} ${ocMonedaBadge(o)?'· '+(o.isUSD?'USD':o.isUF?'UF':'$'):''}</option>`)
+    .join('');
+  html += `<div class="form-group form-full" style="margin-bottom:14px">
+    <label>OC Asociada <span style="font-size:10px;color:var(--accent);font-weight:600">— cámbiala si se asoció a la OC equivocada</span></label>
+    <select id="edit-f-ocId" style="width:100%;border-color:var(--accent)">${ocOptions}</select>
+  </div>`;
+
   if (oc?.isUF)  html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en UF. El monto UF de la factura es requerido para el cálculo de saldo.</div>`;
   if (oc?.isUSD) html += `<div class="alert-banner alert-warn" style="margin-bottom:12px;font-size:12px">⚠️ OC en USD. El monto USD de la factura es requerido para el cálculo de saldo.</div>`;
   html += '<div class="form-grid">';
@@ -3432,13 +3449,38 @@ function openEditFact(id) {
   });
   html += '</div>';
   showGenericModal('✏️ Editar Factura', html, () => {
+    const ocIdAnterior = f.ocId;
+    const ocSelEl = document.getElementById('edit-f-ocId');
+    const nuevoOcId = ocSelEl ? ocSelEl.value : f.ocId;
+
     campos.forEach(c => {
       const el = document.getElementById(`edit-f-${c.key}`);
       if (!el) return;
       f[c.key] = c.type === 'number' ? (parseFloat(el.value)||0) : el.value.trim();
     });
     f.total = (f.neto||0) + (f.iva||0);
-    saveFactToGraph(f).then(()=>{ refreshDashboard(); renderMaestroFact(); renderMaestroOC(); notify(`✅ Factura N°${f.num} actualizada`, 'success'); });
+
+    const nuevaOC = ocData.find(o => o.noc === nuevoOcId);
+    if (nuevoOcId !== ocIdAnterior) {
+      f.ocId = nuevoOcId;
+      // Si la nueva OC no es de la misma moneda que la anterior, limpia el monto UF/USD
+      // para forzar que el usuario ingrese el monto correcto en la moneda nueva.
+      if (!nuevaOC?.isUF)  f.valorUF  = 0;
+      if (!nuevaOC?.isUSD) f.valorUSD = 0;
+    }
+    if (nuevaOC?.isUF  && !f.valorUF)  { notify('La OC seleccionada es en UF. Ingresa el monto UF antes de guardar.','error'); return; }
+    if (nuevaOC?.isUSD && !f.valorUSD) { notify('La OC seleccionada es en USD. Ingresa el monto USD antes de guardar.','error'); return; }
+
+    saveFactToGraph(f).then(()=>{
+      refreshDashboard(); renderMaestroFact(); renderMaestroOC();
+      if (document.getElementById('modal-oc-detail')?.classList.contains('open')) {
+        // Refresca el detalle de OC abierto (por si se reasignó desde ahí)
+        openOCDetail(nuevoOcId !== ocIdAnterior ? nuevoOcId : ocIdAnterior);
+      }
+      notify(nuevoOcId !== ocIdAnterior
+        ? `✅ Factura N°${f.num} reasignada de ${ocIdAnterior} a ${nuevoOcId}`
+        : `✅ Factura N°${f.num} actualizada`, 'success');
+    });
   });
 }
 
